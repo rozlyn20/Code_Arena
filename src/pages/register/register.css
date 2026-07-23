@@ -1,0 +1,142 @@
+.register {
+  min-height: 100vh;
+  display: flex;
+  background: #09090b;
+  color: #ffffff;
+}
+
+/* ---------------- LEFT ---------------- */
+
+.left {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+}
+
+.left form {
+  width: 100%;
+  max-width: 450px;
+}
+
+.wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.wrapper h1 {
+  font-size: 2.6rem;
+  margin-bottom: 12px;
+  font-weight: 700;
+}
+
+.body {
+  color: #a1a1aa;
+  margin-bottom: 35px;
+  line-height: 1.6;
+}
+
+.wrapper label {
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  color: #d4d4d8;
+}
+
+.wrapper input {
+  width: 100%;
+  padding: 15px 18px;
+  margin-bottom: 20px;
+  border-radius: 12px;
+  border: 1px solid #27272a;
+  background: #18181b;
+  color: white;
+  font-size: 15px;
+  transition: all 0.25s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.wrapper input::placeholder {
+  color: #71717a;
+}
+
+.wrapper input:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+}
+
+.btn {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(99, 102, 241, 0.35);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.wrapper p:last-child {
+  margin-top: 25px;
+  color: #a1a1aa;
+}
+
+.wrapper a {
+  color: #818cf8;
+  font-weight: 600;
+}
+
+.wrapper a:hover {
+  color: #a5b4fc;
+}
+
+/* ---------------- RIGHT ---------------- */
+
+
+/* Dark overlay */
+
+.right::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to left,
+    rgba(9, 9, 11, 0.1),
+    rgba(9, 9, 11, 0.55)
+  );
+}
+
+/* ---------------- MOBILE ---------------- */
+
+@media (max-width: 900px) {
+  .register {
+    flex-direction: column;
+  }
+
+  .right {
+    display: none;
+  }
+
+  .left {
+    padding: 30px 22px;
+  }
+
+  .wrapper h1 {
+    font-size: 2rem;
+  }
+}

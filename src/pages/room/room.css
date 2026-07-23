@@ -1,0 +1,198 @@
+.room-page {
+  min-height: 100vh;
+  background: #09090b;
+  display: flex;
+  flex-direction: column;
+  color: white;
+}
+
+/* =========================
+        NAVBAR
+========================= */
+
+.room-navbar {
+  height: 75px;
+  padding: 0 40px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  background: rgba(20,20,25,.6);
+  backdrop-filter: blur(18px);
+}
+
+.logo h2{
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: white;
+}
+
+.room-info{
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+
+.room-id{
+  color:#b8b8b8;
+  font-size:.95rem;
+}
+
+.room-id strong{
+  color:white;
+}
+
+/* =========================
+        BUTTONS
+========================= */
+
+.copy-btn,
+.run-btn,
+.leave-btn{
+  border:none;
+  cursor:pointer;
+  border-radius:12px;
+  padding:10px 18px;
+  font-size:.95rem;
+  transition:.25s;
+}
+
+.copy-btn{
+  background:#27272a;
+  color:white;
+}
+
+.copy-btn:hover{
+  background:#3f3f46;
+}
+
+.run-btn{
+  background:linear-gradient(90deg,#6366f1,#8b5cf6);
+  color:white;
+}
+
+.run-btn:hover{
+  transform:translateY(-2px);
+}
+
+.leave-btn{
+  background:#dc2626;
+  color:white;
+}
+
+.leave-btn:hover{
+  background:#b91c1c;
+}
+
+/* =========================
+      LANGUAGE SELECT
+========================= */
+
+.language-select{
+  background:#18181b;
+  color:white;
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:12px;
+  padding:10px 14px;
+  outline:none;
+}
+
+/* =========================
+       MAIN LAYOUT
+========================= */
+
+.room-content{
+  flex:1;
+  display:flex;
+  padding:24px;
+  gap:24px;
+}
+
+/* =========================
+        SIDEBAR
+========================= */
+
+.sidebar{
+  width:270px;
+  background:rgba(24,24,27,.65);
+  backdrop-filter:blur(18px);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:24px;
+
+  padding:25px;
+
+  display:flex;
+  flex-direction:column;
+}
+
+.sidebar h3{
+  margin-bottom:20px;
+  font-size:1.2rem;
+}
+
+.participant{
+  background:#27272a;
+  border-radius:14px;
+  padding:14px;
+  margin-bottom:12px;
+  color:#e4e4e7;
+}
+
+/* =========================
+          EDITOR
+========================= */
+
+.editor-container{
+  flex:1;
+  background:rgba(24,24,27,.65);
+  backdrop-filter:blur(18px);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:24px;
+
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+
+.editor-placeholder{
+  text-align:center;
+}
+
+.editor-placeholder h2{
+  font-size:2rem;
+  margin-bottom:12px;
+}
+
+.editor-placeholder p{
+  color:#9ca3af;
+  font-size:1rem;
+}
+
+/* =========================
+        RESPONSIVE
+========================= */
+
+@media (max-width:950px){
+
+.room-navbar{
+  flex-direction:column;
+  gap:15px;
+  height:auto;
+  padding:20px;
+}
+
+.room-info{
+  flex-wrap:wrap;
+  justify-content:center;
+}
+
+.room-content{
+  flex-direction:column;
+}
+
+.sidebar{
+  width:100%;
+}
+}
