@@ -167,6 +167,77 @@
 .editor-wrapper .cm-scroller {
   overflow: auto;
 }
+
+.output-panel {
+    background: #111827;
+    border: 1px solid #2d3748;
+    border-radius: 14px;
+    overflow: hidden;
+    height: 250px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+}
+
+.output-header {
+    background: #1f2937;
+    padding: 12px 18px;
+    border-bottom: 1px solid #2d3748;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.terminal-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.terminal-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 10px #22c55e;
+}
+
+.output-header h3 {
+    color: white;
+    font-size: 15px;
+    margin: 0;
+    font-weight: 600;
+}
+
+.clear-output {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 13px;
+    transition: .2s;
+}
+
+.clear-output:hover {
+    color: white;
+}
+
+.terminal-output {
+    flex: 1;
+    padding: 18px;
+    margin: 0;
+
+    background: #0d1117;
+    color: #d1fae5;
+
+    font-family: "JetBrains Mono", Consolas, monospace;
+    font-size: 14px;
+    line-height: 1.6;
+
+    overflow-y: auto;
+    white-space: pre-wrap;
+}
 /* =========================
         RESPONSIVE
 ========================= */

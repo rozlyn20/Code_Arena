@@ -2,8 +2,10 @@ const express = require("express");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
+const runRoutes = require("./routes/runRoutes");
 
 const app = express();
+
 
 app.use(
   cors({
@@ -21,6 +23,9 @@ const io = new Server(server, {
     credentials: true,
   },
 });
+app.use(express.json());
+app.use("/api", runRoutes);
+
 app.get("/", (req, res) => {
   res.send("CodeArena Backend Running 🚀");
 });

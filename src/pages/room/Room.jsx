@@ -131,6 +131,7 @@ export default function Room() {
   const [clients, setClients] = useState([]);
 
   const [language, setLanguage] = useState("cpp");
+const [output, setOutput] = useState("");
 
   useEffect(() => {
     if (!username) {
@@ -138,7 +139,6 @@ export default function Room() {
       navigate("/rooms");
       return;
     }
-    
 
     const init = async () => {
       socketRef.current = await initSocket();
@@ -161,7 +161,6 @@ export default function Room() {
         );
       });
 
-
       socketRef.current.on("connect", () => {
         console.log("Connected:", socketRef.current.id);
 
@@ -173,8 +172,8 @@ export default function Room() {
         });
       });
       socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
-    setCode(code);
-});
+        setCode(code);
+      });
 
       socketRef.current.on("connect_error", (err) => {
         toast.error("Socket connection failed");
@@ -187,7 +186,27 @@ export default function Room() {
       socketRef.current?.disconnect();
     };
   }, [roomId, username, navigate]);
+  const runCode = async () => {
+    console.log("API HIT");
 
+    try {
+      const response = await fetch("http://localhost:5000/api/run", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code }),
+      });
+
+      console.log("Response received:", response);
+
+      const data = await response.json();
+      setOutput(data.output || data.error);
+      console.log("Data:", data);
+    } catch (err) {
+      console.error("Fetch error:", err);
+    }
+  };
   const copyRoomId = async () => {
     try {
       await navigator.clipboard.writeText(roomId);
@@ -230,7 +249,9 @@ export default function Room() {
             <option value="javascript">JavaScript</option>
           </select>
 
-          <button className="run-btn">▶ Run</button>
+          <button type="button" className="run-btn" onClick={runCode}>
+            ▶ Run
+          </button>
 
           <button onClick={leaveRoom} className="leave-btn">
             Leave
@@ -267,6 +288,25 @@ export default function Room() {
               onCodeChange={setCode}
             />
           </div>
+         <div className="output-panel">
+  <div className="output-header">
+    <div className="terminal-title">
+      <span className="terminal-dot"></span>
+      <h3>Output</h3>
+    </div>
+
+    <button
+      className="clear-output"
+      onClick={() => setOutput("")}
+    >
+      Clear
+    </button>
+  </div>
+
+  <pre className="terminal-output">
+    {output || '> Click "Run" to execute your code...'}
+  </pre>
+</div>
         </main>
       </div>
     </div>
