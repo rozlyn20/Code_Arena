@@ -44,6 +44,7 @@
   color:white;
 }
 
+
 /* =========================
         BUTTONS
 ========================= */
@@ -132,67 +133,67 @@
   font-size:1.2rem;
 }
 
-.participant{
-  background:#27272a;
-  border-radius:14px;
-  padding:14px;
-  margin-bottom:12px;
-  color:#e4e4e7;
+.clients-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
-
 /* =========================
           EDITOR
 ========================= */
+.editor-container {
+   flex: 1;
+  display: flex;
+  overflow: hidden;
 
-.editor-container{
-  flex:1;
-  background:rgba(24,24,27,.65);
-  backdrop-filter:blur(18px);
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:24px;
-
-  display:flex;
-  justify-content:center;
-  align-items:center;
+  background: #111114;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 24px;
 }
 
-.editor-placeholder{
-  text-align:center;
+.editor-wrapper {
+ flex:1;
+ min-height: 0;
 }
 
-.editor-placeholder h2{
-  font-size:2rem;
-  margin-bottom:12px;
+/* Make CodeMirror fill the container */
+.editor-wrapper > div,
+.editor-wrapper .cm-theme,
+.editor-wrapper .cm-editor {
+  width: 100%;
+  height: 100%;
 }
 
-.editor-placeholder p{
-  color:#9ca3af;
-  font-size:1rem;
+.editor-wrapper .cm-scroller {
+  overflow: auto;
 }
-
 /* =========================
         RESPONSIVE
 ========================= */
+@media (max-width: 950px) {
+  .room-navbar {
+    flex-direction: column;
+    gap: 15px;
+    height: auto;
+    padding: 20px;
+  }
 
-@media (max-width:950px){
+  .room-info {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 
-.room-navbar{
-  flex-direction:column;
-  gap:15px;
-  height:auto;
-  padding:20px;
-}
+  .room-content {
+    flex-direction: column;
+    height: auto;
+  }
 
-.room-info{
-  flex-wrap:wrap;
-  justify-content:center;
-}
+  .sidebar {
+    width: 100%;
+  }
 
-.room-content{
-  flex-direction:column;
-}
-
-.sidebar{
-  width:100%;
-}
+  .editor-container {
+    height: 70vh;
+    min-height: 500px;
+  }
 }

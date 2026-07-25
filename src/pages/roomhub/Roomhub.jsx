@@ -10,32 +10,36 @@ export default function RoomHub() {
   const [roomName, setRoomName] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [language, setLanguage] = useState("cpp");
+  const [isHost, setIsHost] = useState(false);
 
-  const createRoom = (e) => {
-    if (!displayName.trim()) {
-      alert("Please enter your display name.");
-      return;
-    }
-    e.preventDefault();
-    const id = uuidv4();
-    setRoomCode(id);
+const createRoom = (e) => {
+  e.preventDefault();
 
-    toast.success("New room created!");
-  };
+  if (!displayName.trim()) {
+    toast.error("Please enter your display name.");
+    return;
+  }
 
-  const joinRoom = () => {
-    if (!displayName.trim() || !roomCode.trim()) {
-      alert("Please enter your display name and room code.");
-      return;
-    }
+  const id = uuidv4();
+  setRoomCode(id);
+  setIsHost(true);
 
-    navigate(`/room/${roomCode}`, {
-      state: {
-        username: displayName,
-        isHost: false,
-      },
-    });
-  };
+  toast.success("New room created!");
+};
+
+ const joinRoom = () => {
+  if (!displayName.trim() || !roomCode.trim()) {
+    toast.error("Please enter your display name and room code.");
+    return;
+  }
+
+navigate(`/room/${roomCode}`, {
+  state: {
+    username: displayName,
+    isHost,
+  },
+});
+};
 
   return (
     <div className="min-h-screen bg-[#09090b] flex items-center justify-center px-6">
