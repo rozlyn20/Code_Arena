@@ -1,114 +1,3 @@
-// import { useNavigate, useParams } from "react-router-dom";
-// import { useEffect, useRef, useState } from "react";
-// import toast from "react-hot-toast";
-// import "./Room.css";
-// import Client from "../../components/Client";
-// import Editor from "../../components/Editor";
-// import { initSocket } from "../../socket/socket";
-// import { useLocation } from "react-router-dom";
-// import ACTIONS from "../../socket/actions";
-
-// export default function Room() {
-//   const socketRef = useRef(null);
-//   const location = useLocation();
-
-// const { username, isHost } = location.state || {};
-
-//   useEffect(() => {
-//     const init = async () => {
-//       socketRef.current = await initSocket();
-//       socketRef.current.emit(ACTIONS.JOIN,{
-//         roomId,
-//         username:
-//       });
-
-//     };
-//     init();
-//   }, []);
-//   const [clients, setClients] = useState([
-//     { socketId: 1, username: "Rose" },
-//     { socketId: 2, username: "Rosh" },
-//   ]);
-//   const { roomId } = useParams();
-//   const navigate = useNavigate();
-
-//   const [language, setLanguage] = useState("cpp");
-
-//   const copyRoomId = async () => {
-//     try {
-//       await navigator.clipboard.writeText(roomId);
-//       toast.success("Room ID copied!");
-//     } catch (err) {
-//       toast.error("Failed to copy Room ID.");
-//     }
-//   };
-
-//   const leaveRoom = () => {
-//     toast.success("Left the room");
-//     navigate("/rooms");
-//   };
-
-//   return (
-//     <div className="room-page">
-//       {/* Top Navbar */}
-//       <header className="room-navbar">
-//         <div className="logo">
-//           <h2>CodeArena</h2>
-//         </div>
-
-//         <div className="room-info">
-//           <span className="room-id">
-//             Room: <strong>{roomId}</strong>
-//           </span>
-
-//           <button onClick={copyRoomId} className="copy-btn">
-//             Copy ID
-//           </button>
-
-//           <select
-//             value={language}
-//             onChange={(e) => setLanguage(e.target.value)}
-//             className="language-select"
-//           >
-//             <option value="cpp">C++</option>
-//             <option value="java">Java</option>
-//             <option value="python">Python</option>
-//             <option value="javascript">JavaScript</option>
-//           </select>
-
-//           <button className="run-btn">▶ Run</button>
-
-//           <button onClick={leaveRoom} className="leave-btn">
-//             Leave
-//           </button>
-//         </div>
-//       </header>
-
-//       {/* Main Layout */}
-//       <div className="room-content">
-//         {/* Sidebar */}
-//         <aside className="sidebar">
-//           <h3>Participants</h3>
-
-//           <div className="clients-list">
-//             {clients.map((client) => (
-//               <Client key={client.socketId} username={client.username} />
-//             ))}
-//           </div>
-
-//           <div className="participant">Waiting for others...</div>
-//         </aside>
-
-//         {/* Editor */}
-//         <main className="editor-container">
-//           <div className="editor-wrapper">
-//             <Editor />
-//           </div>
-//         </main>
-//       </div>
-//     </div>
-//   );
-// }
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
@@ -125,14 +14,18 @@ export default function Room() {
   const { roomId } = useParams();
   const location = useLocation();
   const [code, setCode] = useState("");
-
+  const codeRef = useRef("");
   const { username, isHost } = location.state || {};
 
   const [clients, setClients] = useState([]);
 
   const [language, setLanguage] = useState("cpp");
-const [output, setOutput] = useState("");
-
+  const [output, setOutput] = useState("");
+  const [syncing, setSyncing] = useState(false);
+  const handleCodeChange = (newCode) => {
+    setCode(newCode);
+    codeRef.current = newCode;
+  };
   useEffect(() => {
     if (!username) {
       toast.error("Please enter your display name.");
@@ -143,14 +36,15 @@ const [output, setOutput] = useState("");
     const init = async () => {
       socketRef.current = await initSocket();
 
-      socketRef.current.on(ACTIONS.JOINED, ({ clients, username }) => {
-        console.log("JOINED EVENT:", clients);
-
-        if (username !== location.state?.username) {
-          toast.success(`${username} joined the room`);
-        }
-
+      socketRef.current.on(ACTIONS.JOINED, ({ clients, socketId }) => {
         setClients(clients);
+        if (socketId !== socketRef.current.id) {
+          socketRef.current.emit(ACTIONS.SYNC_CODE, {
+            roomId,
+            code: codeRef.current,
+            targetSocketId: socketId,
+          });
+        }
       });
 
       socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
@@ -162,10 +56,6 @@ const [output, setOutput] = useState("");
       });
 
       socketRef.current.on("connect", () => {
-        console.log("Connected:", socketRef.current.id);
-
-        console.log("Emitting JOIN", { roomId, username });
-
         socketRef.current.emit(ACTIONS.JOIN, {
           roomId,
           username,
@@ -173,6 +63,16 @@ const [output, setOutput] = useState("");
       });
       socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
         setCode(code);
+        codeRef.current = code;
+      });
+      socketRef.current.on(ACTIONS.SYNC_CODE, ({ code }) => {
+        console.log("CLIENT GOT SYNC", code);
+
+        setCode(code);
+        codeRef.current = code;
+      });
+      socketRef.current.on("hello-test", (data) => {
+        console.log("HELLO TEST", data);
       });
 
       socketRef.current.on("connect_error", (err) => {
@@ -207,6 +107,20 @@ const [output, setOutput] = useState("");
       console.error("Fetch error:", err);
     }
   };
+  const syncCode = () => {
+    setSyncing(true);
+
+    socketRef.current.emit(ACTIONS.SYNC_CODE, {
+      roomId,
+      code: codeRef.current,
+    });
+
+    setTimeout(() => {
+      setSyncing(false);
+    }, 600);
+
+    toast.success("Sync button clicked!");
+  };
   const copyRoomId = async () => {
     try {
       await navigator.clipboard.writeText(roomId);
@@ -218,6 +132,7 @@ const [output, setOutput] = useState("");
 
   const leaveRoom = () => {
     toast.success("Left the room");
+    socketRef.current?.disconnect();
     navigate("/roomhub");
   };
 
@@ -252,6 +167,12 @@ const [output, setOutput] = useState("");
           <button type="button" className="run-btn" onClick={runCode}>
             ▶ Run
           </button>
+          <button
+            onClick={syncCode}
+            className={`sync-btn ${syncing ? "syncing" : ""}`}
+          >
+            {syncing ? "✅ Synced!" : "🔄 Sync Editor"}
+          </button>
 
           <button onClick={leaveRoom} className="leave-btn">
             Leave
@@ -285,28 +206,25 @@ const [output, setOutput] = useState("");
               socketRef={socketRef}
               roomId={roomId}
               code={code}
-              onCodeChange={setCode}
+              onCodeChange={handleCodeChange}
             />
           </div>
-         <div className="output-panel">
-  <div className="output-header">
-    <div className="terminal-title">
-      <span className="terminal-dot"></span>
-      <h3>Output</h3>
-    </div>
+          <div className="output-panel">
+            <div className="output-header">
+              <div className="terminal-title">
+                <span className="terminal-dot"></span>
+                <h3>Output</h3>
+              </div>
 
-    <button
-      className="clear-output"
-      onClick={() => setOutput("")}
-    >
-      Clear
-    </button>
-  </div>
+              <button className="clear-output" onClick={() => setOutput("")}>
+                Clear
+              </button>
+            </div>
 
-  <pre className="terminal-output">
-    {output || '> Click "Run" to execute your code...'}
-  </pre>
-</div>
+            <pre className="terminal-output">
+              {output || '> Click "Run" to execute your code...'}
+            </pre>
+          </div>
         </main>
       </div>
     </div>

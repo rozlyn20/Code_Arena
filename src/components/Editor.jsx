@@ -10,6 +10,12 @@ export default function Editor({ socketRef, roomId, onCodeChange, code }) {
     <CodeMirror
       value={code}
       onChange={(value) => {
+        console.log("====== EDITOR ======");
+        console.log("Typing:", value);
+        console.log("Socket:", socketRef.current?.id);
+        console.log("Connected:", socketRef.current?.connected);
+        console.log("Room:", roomId);
+
         onCodeChange(value);
 
         socketRef.current.emit("code-change", {

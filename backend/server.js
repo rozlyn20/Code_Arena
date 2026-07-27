@@ -34,6 +34,8 @@ const ACTIONS = {
   JOIN: "join",
   JOINED: "joined",
   DISCONNECTED: "disconnected",
+   CODE_CHANGE: "code-change",
+  SYNC_CODE: "sync-code",
 };
 const userSocketMap = {};
 function getAllConnectedClients(roomId) {
@@ -70,10 +72,21 @@ io.on("connection", (socket) => {
     console.log(userSocketMap);
   });
   socket.on("code-change", ({ roomId, code }) => {
+      console.log("====== SERVER ======");
+  console.log(socket.id);
+  console.log(roomId);
+  console.log(code);
+    console.log("Code received");
     socket.to(roomId).emit("code-change", {
       code,
     });
   });
+
+socket.on(ACTIONS.SYNC_CODE, ({ code, targetSocketId }) => {
+  io.to(targetSocketId).emit(ACTIONS.SYNC_CODE, {
+    code,
+  });
+});
   socket.on("disconnecting", () => {
     const rooms = [...socket.rooms];
 
