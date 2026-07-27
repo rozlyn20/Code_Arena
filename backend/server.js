@@ -1,10 +1,17 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
+const connectDB = require("./config/db");
+const registerChatSocket = require("./socket/chatSocket");
+const authRoutes = require("./routes/authRoutes");
+const chatRoomRoutes = require("./routes/chatRoomRoutes");
+const messageRoutes = require("./routes/messageRoutes");
 const runRoutes = require("./routes/runRoutes");
 
 const app = express();
+connectDB();
 
 
 app.use(
@@ -23,8 +30,12 @@ const io = new Server(server, {
     credentials: true,
   },
 });
+registerChatSocket(io);
 app.use(express.json());
 app.use("/api", runRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/chatrooms", chatRoomRoutes);
+app.use("/api/messages", messageRoutes);
 
 app.get("/", (req, res) => {
   res.send("CodeArena Backend Running 🚀");
