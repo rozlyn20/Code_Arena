@@ -4,7 +4,9 @@ const Message = require("../models/Message");
 const User = require("../models/User");
 
 function registerChatSocket(io) {
-  io.use(async (socket, next) => {
+  const chat = io.of("/chat");
+
+  chat.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
 
@@ -26,7 +28,7 @@ function registerChatSocket(io) {
     }
   });
 
-  io.on("connection", (socket) => {
+  chat.on("connection", (socket) => {
     socket.on("join-chat-room", async ({ roomId }, callback) => {
       try {
         const room = await ChatRoom.findOne({
@@ -50,7 +52,10 @@ function registerChatSocket(io) {
         socket.emit("chat-history", { roomId, messages });
         callback?.({ ok: true });
       } catch (error) {
-        callback?.({ ok: false, message: "Unable to join chat room." });
+        callback?.({
+          ok: false,
+          message: "Unable to join chat room.",
+        });
       }
     });
 
@@ -73,7 +78,10 @@ function registerChatSocket(io) {
         }
 
         if (!text?.trim()) {
-          return callback?.({ ok: false, message: "Message cannot be empty." });
+          return callback?.({
+            ok: false,
+            message: "Message cannot be empty.",
+          });
         }
 
         const message = await Message.create({
@@ -84,10 +92,14 @@ function registerChatSocket(io) {
 
         await message.populate("sender", "username email");
 
-        io.to(roomId).emit("receive-message", { message });
+        chat.to(roomId).emit("receive-message", { message });
+
         callback?.({ ok: true, message });
       } catch (error) {
-        callback?.({ ok: false, message: "Unable to send message." });
+        callback?.({
+          ok: false,
+          message: "Unable to send message.",
+        });
       }
     });
   });

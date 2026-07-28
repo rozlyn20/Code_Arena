@@ -62,14 +62,14 @@ export default function Navbar() {
         {/* Desktop Buttons */}
         <div className="hidden md:flex items-center space-x-4">
           <Link
-            to="/login"
+            to="/workspace?mode=login"
             className="text-sm font-medium text-zinc-400 hover:text-white transition-colors px-4 py-2"
           >
             Login
           </Link>
 
           <Link
-            to="/roomhub"
+            to="/workspace?mode=signup"
             className="relative group overflow-hidden rounded-xl px-5 py-2.5 text-sm font-medium text-white transition-all duration-300 active:scale-95"
           >
             <span className="absolute inset-0 bg-gradient-to-r from-brand-blue to-brand-violet group-hover:opacity-90 transition-opacity"></span>
@@ -115,7 +115,7 @@ export default function Navbar() {
 
               <div className="pt-4 border-t border-white/5 flex flex-col space-y-3">
                 <Link
-                  to="/login"
+                  to="/workspace?mode=login"
                   onClick={() => setIsOpen(false)}
                   className="w-full text-center text-zinc-400 hover:text-white py-2 text-base font-medium"
                 >
@@ -123,7 +123,7 @@ export default function Navbar() {
                 </Link>
 
                 <Link
-                  to="/register"
+                  to="/workspace?mode=register"
                   onClick={() => setIsOpen(false)}
                   className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-blue to-brand-violet text-center text-white text-base font-medium active:scale-98 transition-transform"
                 >
