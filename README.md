@@ -247,6 +247,18 @@ npm run dev
 
 
 ---
+### Collaborative Editor
+
+> <img width="998" height="432" alt="image" src="https://github.com/user-attachments/assets/dc5f00f1-a15c-450e-b741-5a9609cf7c17" />
+
+
+---
+
+### Code Execution
+
+> <img width="548" height="543" alt="image" src="https://github.com/user-attachments/assets/c598c770-a30c-49fe-9263-2f255fcb27da" />
+
+
 
 # 💡 Why CodeArena?
 
