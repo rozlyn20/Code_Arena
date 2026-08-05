@@ -82,9 +82,9 @@ export default function Hero() {
             variants={itemVariants} 
             className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.1] font-sans"
           >
-            Where Coding Interviews Become <br />
+            Real-Time Collaborative Coding for<br />
             <span className="bg-gradient-to-r from-brand-blue via-indigo-400 to-brand-violet bg-clip-text text-transparent">
-              Team Sports.
+              Modern Developers
             </span>
           </motion.h1>
 
@@ -92,7 +92,7 @@ export default function Hero() {
             variants={itemVariants}
             className="text-lg text-zinc-400 font-normal leading-relaxed max-w-lg"
           >
-            Stop practicing in isolation. Host live collaborative mock interviews with classmates, get instant AI mentor feedback, and debug together in real-time.
+            Stop practicing in isolation. Create live coding rooms, collaborate with teammates, and solve problems together in real time.
           </motion.p>
 
           <motion.div 

@@ -1,7 +1,7 @@
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
-import "./Room.css";
+import "./room.css";
 import Client from "../../components/Client";
 import Editor from "../../components/Editor";
 import { initSocket } from "../../socket/socket";
@@ -13,14 +13,14 @@ export default function Room() {
   const navigate = useNavigate();
   const { roomId } = useParams();
   const location = useLocation();
+  const { username, isHost } = location.state || {};
   const [code, setCode] = useState("");
   const codeRef = useRef("");
-  const { username, isHost } = location.state || {};
-
   const [clients, setClients] = useState([]);
-
   const [language, setLanguage] = useState("cpp");
-  const [output, setOutput] = useState("");
+ const [input, setInput] = useState("");
+const [execution, setExecution] = useState(null);
+const [isRunning, setIsRunning] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const handleCodeChange = (newCode) => {
     setCode(newCode);
@@ -29,7 +29,7 @@ export default function Room() {
   useEffect(() => {
     if (!username) {
       toast.error("Please enter your display name.");
-      navigate("/rooms");
+      navigate("/roomhub");
       return;
     }
 
@@ -86,27 +86,58 @@ export default function Room() {
       socketRef.current?.disconnect();
     };
   }, [roomId, username, navigate]);
-  const runCode = async () => {
-    console.log("API HIT");
+ const runCode = async () => {
+  setIsRunning(true);
 
-    try {
-      const response = await fetch("http://localhost:5000/api/run", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ code }),
-      });
+  try {
+    const apiBase = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
 
-      console.log("Response received:", response);
+    const response = await fetch(`${apiBase}/api/run`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        code,
+        language,
+        input,
+      }),
+    });
 
-      const data = await response.json();
-      setOutput(data.output || data.error);
-      console.log("Data:", data);
-    } catch (err) {
-      console.error("Fetch error:", err);
-    }
-  };
+    const data = await response.json();
+    setExecution(data);
+  } catch (error) {
+    setExecution({
+      status: "request_error",
+      stdout: "",
+      stderr: "Could not reach the execution server.",
+    });
+  } finally {
+    setIsRunning(false);
+  }
+};
+
+const executionText = () => {
+  if (!execution) {
+    return '> Click "Run" to execute your code...';
+  }
+
+  const sections = [`[${execution.status.toUpperCase()}]`];
+
+  if (execution.stdout) {
+    sections.push(`STDOUT\n${execution.stdout}`);
+  }
+
+  if (execution.stderr) {
+    sections.push(`STDERR\n${execution.stderr}`);
+  }
+
+  if (!execution.stdout && !execution.stderr) {
+    sections.push("(No output)");
+  }
+
+  return sections.join("\n\n");
+};
   const syncCode = () => {
     setSyncing(true);
 
@@ -164,9 +195,14 @@ export default function Room() {
             <option value="javascript">JavaScript</option>
           </select>
 
-          <button type="button" className="run-btn" onClick={runCode}>
-            ▶ Run
-          </button>
+          <button
+  type="button"
+  className="run-btn"
+  onClick={runCode}
+  disabled={isRunning}
+>
+  {isRunning ? "Running…" : "▶ Run"}
+</button>
           <button
             onClick={syncCode}
             className={`sync-btn ${syncing ? "syncing" : ""}`}
@@ -210,21 +246,36 @@ export default function Room() {
             />
           </div>
           <div className="output-panel">
-            <div className="output-header">
-              <div className="terminal-title">
-                <span className="terminal-dot"></span>
-                <h3>Output</h3>
-              </div>
+  <div className="output-header">
+    <div className="terminal-title">
+      <span className="terminal-dot"></span>
+      <h3>Output</h3>
+    </div>
 
-              <button className="clear-output" onClick={() => setOutput("")}>
-                Clear
-              </button>
-            </div>
+    <button
+      className="clear-output"
+      onClick={() => setExecution(null)}
+      type="button"
+    >
+      Clear
+    </button>
+  </div>
 
-            <pre className="terminal-output">
-              {output || '> Click "Run" to execute your code...'}
-            </pre>
-          </div>
+  <label className="stdin-label" htmlFor="custom-input">
+    Custom input (stdin)
+
+    <textarea
+      id="custom-input"
+      className="stdin-input"
+      value={input}
+      onChange={(event) => setInput(event.target.value)}
+      placeholder={"Example:\n5\n10 20 30 40 50"}
+      spellCheck="false"
+    />
+  </label>
+
+  <pre className="terminal-output">{executionText()}</pre>
+</div>
         </main>
       </div>
     </div>
