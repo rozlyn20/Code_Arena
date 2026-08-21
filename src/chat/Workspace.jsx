@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import Dashboard from "./components/Dashboard";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE =  import.meta.env.VITE_BACKEND_URL;
 
 export default function Workspace() {
   const [searchParams] = useSearchParams();
