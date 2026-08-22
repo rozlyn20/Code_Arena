@@ -44,6 +44,12 @@ navigate(`/room/${roomCode}`, {
   return (
     <div className="min-h-screen bg-[#09090b] flex items-center justify-center px-6">
       <div className="w-full max-w-md rounded-3xl border border-white/10 bg-zinc-900/40 backdrop-blur-xl p-8">
+      <button
+  onClick={() => navigate("/")}
+  className="mb-6 text-sm text-zinc-400 transition-colors hover:text-white"
+>
+  ← Back to Home
+</button>
         <h1 className="text-4xl font-bold text-white text-center">CodeArena</h1>
 
         <p className="text-zinc-400 text-center mt-2 mb-8">
