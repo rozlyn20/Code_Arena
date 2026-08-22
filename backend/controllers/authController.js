@@ -4,7 +4,7 @@ const createToken = require("../utils/createToken");
 const redis = require("../config/redis");
 const generateOTP = require("../utils/otp");
 const { saveOTP,verifyOTP } = require("../services/otpService");
-const transporter = require("../config/mail");
+const sendOTPEmail = require("../config/mail");
 
 // async function register(req, res) {
 //   try {
@@ -102,12 +102,10 @@ async function register(req, res) {
     await saveOTP(normalizedEmail, otp);
 
     // Send OTP email
-    await transporter.sendMail({
-      from: process.env.SMTP_USER,
-      to: normalizedEmail,
-      subject: "CodeArena Email Verification",
-      text: `Your CodeArena verification OTP is ${otp}. It is valid for 5 minutes.`,
-    });
+    await sendOTPEmail({
+  to: normalizedEmail,
+  otp,
+});
 
     return res.status(200).json({
       message: "OTP sent to your email. Please verify your email.",
@@ -252,12 +250,10 @@ async function resendOTP(req, res) {
     await saveOTP(normalizedEmail, otp);
 
     // Send new OTP
-    await transporter.sendMail({
-      from: process.env.SMTP_USER,
-      to: normalizedEmail,
-      subject: "CodeArena Email Verification",
-      text: `Your new CodeArena verification OTP is ${otp}. It is valid for 5 minutes.`,
-    });
+    await sendOTPEmail({
+  to: normalizedEmail,
+  otp,
+});
 
     return res.status(200).json({
       message: "A new OTP has been sent to your email.",
