@@ -14,10 +14,20 @@ const FRONTEND_URL =
 const app = express();
 connectDB();
 
-
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://code-arena-gilt-six.vercel.app",
+  "https://code-arena-rozlyn.vercel.app",
+];
 app.use(
   cors({
-    origin: FRONTEND_URL,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
@@ -26,7 +36,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: FRONTEND_URL,
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
     credentials: true,
   },
