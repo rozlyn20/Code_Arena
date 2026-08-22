@@ -103,7 +103,7 @@ async function register(req, res) {
 
     // Send OTP email
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: process.env.SMTP_USER,
       to: normalizedEmail,
       subject: "CodeArena Email Verification",
       text: `Your CodeArena verification OTP is ${otp}. It is valid for 5 minutes.`,
@@ -253,7 +253,7 @@ async function resendOTP(req, res) {
 
     // Send new OTP
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: process.env.SMTP_USER,
       to: normalizedEmail,
       subject: "CodeArena Email Verification",
       text: `Your new CodeArena verification OTP is ${otp}. It is valid for 5 minutes.`,
