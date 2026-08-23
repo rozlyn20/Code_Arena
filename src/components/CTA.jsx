@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { FiArrowRight, FiPlus } from 'react-icons/fi';
+import { Link } from "react-router-dom";
+
 
 export default function CTA() {
   return (
@@ -33,17 +35,20 @@ export default function CTA() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+             <Link to="roomhub">
             <button className="group w-full sm:w-auto relative overflow-hidden rounded-xl bg-gradient-to-r from-brand-blue to-brand-violet p-[1px] active:scale-98 transition-transform duration-150 shadow-lg shadow-indigo-500/10">
               <div className="bg-zinc-950 hover:bg-transparent rounded-[11px] px-8 py-4 flex items-center justify-center space-x-2 transition-all duration-300">
                 <span className="text-white font-semibold text-sm">Create Free Room</span>
                 <FiPlus className="text-white text-base group-hover:rotate-90 transition-transform duration-300" />
               </div>
             </button>
-
+            </Link>
+            <Link to="roomhub">x
             <button className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold text-sm rounded-xl px-8 py-4 hover:border-white/20 transition-all duration-300 active:scale-98">
               <span>Join Active Room</span>
               <FiArrowRight className="text-sm" />
             </button>
+             </Link>
           </div>
 
           <p className="text-xs text-zinc-500 font-medium">
