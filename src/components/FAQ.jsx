@@ -17,12 +17,8 @@ export default function FAQ() {
     },
     {
       question: 'What programming languages are supported in the IDE?',
-      answer: 'CodeArena currently supports JavaScript (Node.js), Python 3, C++, and Java. All languages feature local/remote sandboxed code execution, console output logs, and compiler error reporting.',
-    },
-    {
-      question: 'Does the AI Mentor write the code solutions for me?',
-      answer: 'No, the AI Mentor is designed to act like a real FANG interviewer. It uses a Socratic guidance approach—offering hints, pointing out syntax/logic bugs, and reviewing time-space complexity without giving away the direct code.',
-    },
+      answer: 'CodeArena currently supports C++. All languages feature local/remote sandboxed code execution, console output logs, and compiler error reporting.',
+    }
   ];
 
   const toggleFAQ = (index) => {

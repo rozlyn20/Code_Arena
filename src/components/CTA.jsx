@@ -28,7 +28,7 @@ export default function CTA() {
               </span>
             </h2>
             <p className="text-sm md:text-base text-zinc-400 font-normal leading-relaxed">
-              Ditch the boring solo grind. Create a live room in one click, invite your classmates, and start solving DSA questions with live AI feedback.
+              Ditch the boring solo grind. Create a live room in one click, invite your classmates, and start solving DSA questions.
             </p>
           </div>
 

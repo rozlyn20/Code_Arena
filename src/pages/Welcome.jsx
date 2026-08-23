@@ -34,7 +34,7 @@ export default function Welcome() {
           <Hero />
 
           {/* Trusted By Section */}
-          <TrustedBy />
+          {/* <TrustedBy /> */}
 
           {/* Core Features & Placement Section */}
           <Features />
@@ -43,10 +43,10 @@ export default function Welcome() {
           <HowItWorks />
 
           {/* Why CodeArena Section */}
-          <Comparison />
+          {/* <Comparison /> */}
 
           {/* AI Mentor Section */}
-          <AIMentor />
+          {/* <AIMentor /> */}
 
           {/* Statistics Section
           <Stats /> */}

@@ -86,12 +86,44 @@ const [isRunning, setIsRunning] = useState(false);
       socketRef.current?.disconnect();
     };
   }, [roomId, username, navigate]);
- const runCode = async () => {
+//  const runCode = async () => {
+//   setIsRunning(true);
+
+//   try {
+//     const apiBase = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+
+//     const response = await fetch(`${apiBase}/api/run`, {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify({
+//         code,
+//         language,
+//         input,
+//       }),
+//     });
+
+//     const data = await response.json();
+//     setExecution(data);
+//   } catch (error) {
+//     setExecution({
+//       status: "request_error",
+//       stdout: "",
+//       stderr: "Could not reach the execution server.",
+//     });
+//   } finally {
+//     setIsRunning(false);
+//   }
+// };
+const runCode = async () => {
   setIsRunning(true);
+  setExecution(null);
 
   try {
     const apiBase = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
 
+    // 1. Queue the execution job
     const response = await fetch(`${apiBase}/api/run`, {
       method: "POST",
       headers: {
@@ -105,8 +137,73 @@ const [isRunning, setIsRunning] = useState(false);
     });
 
     const data = await response.json();
-    setExecution(data);
+
+    if (!response.ok) {
+      setExecution(data);
+      return;
+    }
+
+    const { jobId } = data;
+
+    if (!jobId) {
+      setExecution({
+        status: "request_error",
+        stdout: "",
+        stderr: "No job ID was returned by the server.",
+      });
+      return;
+    }
+
+    // 2. Poll for the result
+    const maxAttempts = 30;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const resultResponse = await fetch(
+        `${apiBase}/api/run/${jobId}`
+      );
+
+      const resultData = await resultResponse.json();
+
+      // Still waiting
+      if (
+        resultData.status === "waiting" ||
+        resultData.status === "active" ||
+        resultData.status === "delayed" ||
+        resultData.status === "waiting-children"
+      ) {
+        continue;
+      }
+
+      // Job finished
+      if (resultData.status === "completed") {
+        setExecution(resultData.result);
+        return;
+      }
+
+      // Job failed
+      if (resultData.status === "failed") {
+        setExecution(
+          resultData.result || {
+            status: "failed",
+            stdout: "",
+            stderr: "Code execution failed.",
+          }
+        );
+        return;
+      }
+    }
+
+    // 3. Timeout while waiting for worker
+    setExecution({
+      status: "timeout",
+      stdout: "",
+      stderr: "Execution took too long to complete.",
+    });
   } catch (error) {
+    console.error("Code execution request failed:", error);
+
     setExecution({
       status: "request_error",
       stdout: "",

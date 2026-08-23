@@ -124,218 +124,132 @@ export default function Hero() {
         </motion.div>
 
         {/* Right Column: Interactive Product Preview Workspace */}
-        <div className="lg:col-span-7 flex items-center justify-center relative w-full pt-10 lg:pt-0">
-          {/* Floating Element 1: Developers Online */}
-          <motion.div 
-            animate={{ y: [0, -8, 0] }}
-            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-            className="absolute -top-4 -left-6 z-20 glass-panel rounded-xl px-4 py-2.5 flex items-center space-x-2.5 shadow-xl shadow-black/40 border-indigo-500/20"
-          >
-            <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span className="text-xs font-semibold text-white">3 Developers Online</span>
-            <div className="flex -space-x-1.5 ml-1">
-              <div className="w-5 h-5 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 border border-zinc-950 flex items-center justify-center text-[8px] font-bold text-white">R</div>
-              <div className="w-5 h-5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 border border-zinc-950 flex items-center justify-center text-[8px] font-bold text-white">S</div>
-              <div className="w-5 h-5 rounded-full bg-gradient-to-r from-brand-blue to-purple-600 border border-zinc-950 flex items-center justify-center text-[8px] font-bold text-white">AI</div>
-            </div>
-          </motion.div>
-
-          {/* Floating Element 2: AI Review Ready */}
-          <motion.div 
-            animate={{ y: [0, 8, 0] }}
-            transition={{ repeat: Infinity, duration: 5, ease: "easeInOut", delay: 1 }}
-            className="absolute bottom-12 -right-4 z-20 glass-panel rounded-xl px-4 py-3 flex items-center space-x-3 shadow-xl shadow-black/40 border-purple-500/20"
-          >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-500/20 to-indigo-500/20 border border-purple-500/30 flex items-center justify-center">
-              <FiCpu className="text-purple-400 text-sm animate-spin duration-3000" />
-            </div>
-            <div>
-              <p className="text-[10px] text-zinc-500 uppercase tracking-wider font-bold">Optimization Suggestion</p>
-              <p className="text-xs font-bold text-white">AI Review Ready</p>
-            </div>
-          </motion.div>
-
-          {/* Floating Element 3: Runtime Specs */}
-          <motion.div 
-            animate={{ y: [0, -6, 0] }}
-            transition={{ repeat: Infinity, duration: 4.5, ease: "easeInOut", delay: 0.5 }}
-            className="absolute bottom-6 -left-6 z-20 glass-panel rounded-xl px-3.5 py-2 flex items-center space-x-2 shadow-xl shadow-black/40"
-          >
-            <span className="text-[10px] font-bold text-emerald-400 px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">✓ Success</span>
-            <span className="text-xs text-zinc-400 font-medium border-l border-white/10 pl-2">16 ms</span>
-            <span className="text-xs text-zinc-500 font-medium">Room #A92K</span>
-          </motion.div>
-
-          {/* Main IDE Window Mockup */}
-          <motion.div
-            ref={containerRef}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-            style={{
-              transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
-              transition: 'transform 0.1s ease-out',
-            }}
-            className="w-full max-w-2xl bg-zinc-950/80 rounded-2xl border border-white/10 shadow-2xl shadow-black/80 overflow-hidden relative"
-          >
-            {/* Header / Tab bar */}
-            <div className="h-11 bg-zinc-900/60 border-b border-white/5 px-4 flex items-center justify-between">
-              <div className="flex items-center space-x-1.5">
-                <div className="w-3 h-3 rounded-full bg-rose-500/80"></div>
-                <div className="w-3 h-3 rounded-full bg-amber-500/80"></div>
-                <div className="w-3 h-3 rounded-full bg-emerald-500/80"></div>
-              </div>
-              <div className="flex items-center space-x-2 bg-zinc-950/80 border border-white/5 px-3 py-1 rounded-lg text-xs text-zinc-400 font-mono">
-                <FiTerminal className="text-zinc-500" />
-                <span>two_sum.js</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <span className="text-[10px] text-zinc-500 font-bold bg-zinc-800 px-2 py-0.5 rounded uppercase">JavaScript</span>
-                <div className="h-5 w-[1px] bg-white/5"></div>
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
-              </div>
-            </div>
-
-            {/* Code Editor Area */}
-            <div className="p-5 font-mono text-[13px] md:text-sm text-zinc-300 leading-relaxed text-left min-h-[320px] relative overflow-hidden select-none">
-              {/* Code Line 1 */}
-              <div className="flex space-x-4">
-                <span className="w-6 text-zinc-600 text-right text-xs pt-0.5">1</span>
-                <span>
-                  <span className="text-pink-400">function</span>{' '}
-                  <span className="text-brand-blue">twoSum</span>(nums, target) &#123;
-                </span>
-              </div>
-
-              {/* Code Line 2 */}
-              <div className="flex space-x-4">
-                <span className="w-6 text-zinc-600 text-right text-xs pt-0.5">2</span>
-                <span className="pl-4 text-zinc-500">// Store indices in map for O(1) lookup</span>
-              </div>
-
-              {/* Code Line 3 */}
-              <div className="flex space-x-4">
-                <span className="w-6 text-zinc-600 text-right text-xs pt-0.5">3</span>
-                <span>
-                  <span className="pl-4 text-pink-400">const</span> map ={' '}
-                  <span className="text-amber-300">new</span>{' '}
-                  <span className="text-teal-400">Map</span>();
-                </span>
-              </div>
-
-              {/* Code Line 4 */}
-              <div className="flex space-x-4">
-                <span className="w-6 text-zinc-600 text-right text-xs pt-0.5">4</span>
-                <span>
-                  <span className="pl-4 text-pink-400">for</span> (
-                  <span className="text-pink-400">let</span> i ={' '}
-                  <span className="text-purple-400">0</span>; i &lt; nums.length; i++) &#123;
-                </span>
-              </div>
-
-              {/* Code Line 5 */}
-              <div className="flex space-x-4">
-                <span className="w-6 text-zinc-600 text-right text-xs pt-0.5">5</span>
-                <span>
-                  <span className="pl-8 text-pink-400">const</span> complement = target - nums[i];
-                </span>
-              </div>
-
-              {/* Code Line 6 - Live Typing Cursor 1 */}
-              <div className="flex space-x-4 relative">
-                <span className="w-6 text-zinc-600 text-right text-xs pt-0.5">6</span>
-                <span className="pl-8">
-                  <span className="text-pink-400">if</span> (map.<span className="text-teal-400">has</span>(complement)) &#123;
-                  {/* Sarah Custom Cursor */}
-                  <span className="inline-block w-[2px] h-4 bg-brand-violet ml-0.5 animate-pulse relative">
-                    <span className="absolute left-0 bottom-4 bg-brand-violet text-white text-[9px] font-bold px-1 py-0.5 rounded-md whitespace-nowrap opacity-90 scale-95 origin-bottom-left shadow-lg shadow-purple-500/20">
-                      Sarah
-                    </span>
-                  </span>
-                </span>
-              </div>
-
-              {/* Code Line 7 - Live Typing Cursor 2 */}
-              <div className="flex space-x-4">
-                <span className="w-6 text-zinc-600 text-right text-xs pt-0.5">7</span>
-                <span className="pl-12">
-                  <span className="text-pink-400">return</span> [map.<span className="text-teal-400">get</span>(complement), i];
-                  {/* Rahul Custom Cursor */}
-                  <span className="inline-block w-[2px] h-4 bg-brand-blue ml-0.5 animate-pulse relative">
-                    <span className="absolute left-0 bottom-4 bg-brand-blue text-white text-[9px] font-bold px-1 py-0.5 rounded-md whitespace-nowrap opacity-90 scale-95 origin-bottom-left shadow-lg shadow-blue-500/20">
-                      Rahul typing
-                    </span>
-                  </span>
-                </span>
-              </div>
-
-              {/* Code Line 8 */}
-              <div className="flex space-x-4">
-                <span className="w-6 text-zinc-600 text-right text-xs pt-0.5">8</span>
-                <span className="pl-8">&#125;</span>
-              </div>
-
-              {/* Code Line 9 */}
-              <div className="flex space-x-4">
-                <span className="w-6 text-zinc-600 text-right text-xs pt-0.5">9</span>
-                <span className="pl-8">map.<span className="text-teal-400">set</span>(nums[i], i);</span>
-              </div>
-
-              {/* Code Line 10 */}
-              <div className="flex space-x-4">
-                <span className="w-6 text-zinc-600 text-right text-xs pt-0.5">10</span>
-                <span className="pl-4">&#125;</span>
-              </div>
-
-              {/* Floating Collaborative Action popup: "Rahul joined the room" */}
-              <motion.div 
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 1, duration: 0.5 }}
-                className="absolute top-4 right-4 bg-zinc-900/90 backdrop-blur border border-white/10 px-3 py-1.5 rounded-lg flex items-center space-x-2 shadow-lg"
-              >
-                <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
-                <span className="text-[11px] text-zinc-300 font-sans font-medium">Rahul joined the room</span>
-              </motion.div>
-
-              {/* Embedded AI Mentor Hint Box inside Editor */}
-              <motion.div
-                initial={{ opacity: 0, y: 15 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 2, duration: 0.6 }}
-                className="mt-6 mx-2 bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-4 flex items-start space-x-3.5 shadow-inner"
-              >
-                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center shrink-0">
-                  <FiCpu className="text-indigo-400 text-base" />
-                </div>
-                <div className="space-y-1 font-sans text-left">
-                  <h4 className="text-xs font-bold text-indigo-300 flex items-center space-x-2">
-                    <span>AI Interview Mentor</span>
-                    <span className="text-[9px] bg-indigo-500/20 text-indigo-200 px-1 rounded uppercase tracking-wider font-bold">Feedback</span>
-                  </h4>
-                  <p className="text-xs text-zinc-300 leading-relaxed">
-                    Great choice using a <code className="text-[11px] text-indigo-200 bg-indigo-950/50 px-1 py-0.5 rounded border border-indigo-500/10">Map</code>! This solution has a runtime of <span className="font-semibold text-emerald-400">O(N)</span> and space complexity of <span className="font-semibold text-amber-400">O(N)</span>. Would you like me to analyze edge cases (like empty arrays or duplicates)?
-                  </p>
-                  <div className="flex space-x-3 pt-2">
-                    <button className="text-[10px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors">Analyze Edge Cases</button>
-                    <button className="text-[10px] font-bold text-zinc-500 hover:text-zinc-400 transition-colors">Dismiss</button>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-            
-            {/* Live activity indicator bar */}
-            <div className="bg-zinc-950 px-5 py-2.5 border-t border-white/5 flex items-center justify-between text-xs text-zinc-500 font-sans">
-              <div className="flex items-center space-x-2">
-                <FiUsers />
-                <span className="font-medium text-zinc-400">3 users in room</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="h-2 w-2 rounded-full bg-brand-blue animate-pulse"></div>
-                <span className="font-medium text-zinc-400">Live share active</span>
-              </div>
-            </div>
-          </motion.div>
+<div className="lg:col-span-7 flex items-center justify-center w-full pt-10 lg:pt-0">
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.6 }}
+    className="w-full max-w-3xl rounded-2xl border border-white/10 bg-zinc-950 shadow-2xl shadow-black/40 overflow-hidden"
+  >
+    {/* Workspace Header */}
+    <div className="h-14 bg-zinc-900 border-b border-white/5 px-5 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="flex gap-1.5">
+          <div className="w-3 h-3 rounded-full bg-rose-500/80" />
+          <div className="w-3 h-3 rounded-full bg-amber-500/80" />
+          <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
         </div>
+
+        <span className="text-sm font-semibold text-white">
+          CodeArena
+        </span>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <span className="text-xs text-zinc-500">
+          Room #A92K
+        </span>
+
+        <div className="flex items-center gap-2 text-xs text-emerald-400">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          Live
+        </div>
+      </div>
+    </div>
+
+    {/* Room / Language Bar */}
+    <div className="px-5 py-3 bg-zinc-950 border-b border-white/5 flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="flex -space-x-2">
+          <div className="w-7 h-7 rounded-full bg-indigo-600 border-2 border-zinc-950 flex items-center justify-center text-[10px] font-bold text-white">
+            R
+          </div>
+
+          <div className="w-7 h-7 rounded-full bg-emerald-600 border-2 border-zinc-950 flex items-center justify-center text-[10px] font-bold text-white">
+            S
+          </div>
+        </div>
+
+        <span className="text-xs text-zinc-400">
+          2 developers collaborating
+        </span>
+      </div>
+
+      <span className="text-xs font-medium text-zinc-400 bg-zinc-900 border border-white/5 px-3 py-1.5 rounded-lg">
+        C++
+      </span>
+    </div>
+
+    {/* Code Area */}
+    <div className="p-6 min-h-[320px] font-mono text-sm leading-7 text-left">
+      <div className="flex">
+        <span className="w-8 text-zinc-700 select-none">1</span>
+        <span>
+          <span className="text-pink-400">#include</span>{" "}
+          <span className="text-emerald-400">&lt;iostream&gt;</span>
+        </span>
+      </div>
+
+      <div className="flex">
+        <span className="w-8 text-zinc-700">2</span>
+      </div>
+
+      <div className="flex">
+        <span className="w-8 text-zinc-700">3</span>
+        <span>
+          <span className="text-purple-400">int</span>{" "}
+          <span className="text-blue-400">main</span>() {"{"}
+        </span>
+      </div>
+
+      <div className="flex">
+        <span className="w-8 text-zinc-700">4</span>
+        <span className="pl-6">
+          std::cout &lt;&lt;{" "}
+          <span className="text-amber-300">
+            "Hello, World!"
+          </span>
+          ;
+        </span>
+      </div>
+
+      <div className="flex">
+        <span className="w-8 text-zinc-700">5</span>
+        <span>
+          {"}"}
+        </span>
+      </div>
+
+      {/* Cursor indicator */}
+      <div className="mt-4 ml-14 flex items-center gap-2">
+        <span className="w-[2px] h-5 bg-indigo-400 animate-pulse" />
+        <span className="text-[10px] text-indigo-400">
+          Sarah is editing
+        </span>
+      </div>
+    </div>
+
+    {/* Output */}
+    <div className="border-t border-white/5 bg-zinc-900/60">
+      <div className="px-5 py-3 flex items-center justify-between">
+        <span className="text-xs font-semibold text-zinc-400">
+          Output
+        </span>
+
+        <span className="text-[10px] text-emerald-400">
+          ✓ Success · 16 ms
+        </span>
+      </div>
+
+      <div className="px-5 pb-5">
+        <div className="bg-zinc-950 rounded-lg border border-white/5 p-4 font-mono text-xs text-zinc-300 text-left">
+          <span className="text-zinc-600">&gt;</span>{" "}
+          Hello, World!
+        </div>
+      </div>
+    </div>
+  </motion.div>
+</div>
       </div>
     </section>
   );
