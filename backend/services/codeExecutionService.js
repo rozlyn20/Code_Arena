@@ -38,13 +38,43 @@ const LANGUAGE_CONFIG = {
 ],
   },
 
-  python: {
-    fileName: "main.py",
-  },
+python: {
+  fileName: "main.py",
+  image: "python:3.12-slim",
+
+  runCommand: "sh",
+  runArgs: [
+    "-c",
+    [
+      `timeout -k 1s ${PROGRAM_TIMEOUT_SECONDS}s python main.py`,
+      "exitCode=$?",
+      `if [ "$exitCode" -eq 124 ] || [ "$exitCode" -eq 137 ]; then`,
+      `  echo "${TIMEOUT_MARKER}" >&2`,
+      "  exit 124",
+      "fi",
+      'exit "$exitCode"',
+    ].join("\n"),
+  ],
+},
 
   javascript: {
-    fileName: "main.js",
-  },
+  fileName: "main.js",
+  image: "node:22-slim",
+
+  runCommand: "sh",
+  runArgs: [
+    "-c",
+    [
+      `timeout -k 1s ${PROGRAM_TIMEOUT_SECONDS}s node main.js`,
+      "exitCode=$?",
+      `if [ "$exitCode" -eq 124 ] || [ "$exitCode" -eq 137 ]; then`,
+      `  echo "${TIMEOUT_MARKER}" >&2`,
+      "  exit 124",
+      "fi",
+      'exit "$exitCode"',
+    ].join("\n"),
+  ],
+},
 
   java: {
     fileName: "Main.java",
@@ -216,14 +246,15 @@ async function executeCode({ language, code, input }) {
   try {
     await fs.writeFile(sourcePath, code, "utf8");
 
-    const compilation = await runDockerProcess({
-      image: config.image,
-      sourceDir: tempDir,
-      command: config.buildCommand,
-      args: config.buildArgs,
-      input: null,
-      timeoutMs: COMPILE_TIMEOUT_MS,
-    });
+   if (config.buildCommand) {
+  const compilation = await runDockerProcess({
+    image: config.image,
+    sourceDir: tempDir,
+    command: config.buildCommand,
+    args: config.buildArgs,
+    input: null,
+    timeoutMs: COMPILE_TIMEOUT_MS,
+  });
 
     if (compilation.timedOut) {
       return {
@@ -246,6 +277,7 @@ async function executeCode({ language, code, input }) {
           "Compilation failed.",
       };
     }
+  }
 
     const execution = await runDockerProcess({
       image: config.image,
