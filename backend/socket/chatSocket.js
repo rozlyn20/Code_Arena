@@ -5,7 +5,7 @@ const User = require("../models/User");
 
 function registerChatSocket(io) {
   const chat = io.of("/chat");
-
+//middleware to verify user authentication
   chat.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
@@ -27,7 +27,7 @@ function registerChatSocket(io) {
       next(new Error("Invalid or expired token."));
     }
   });
-
+//actual connection 
   chat.on("connection", (socket) => {
     socket.on("join-chat-room", async ({ roomId }, callback) => {
       try {

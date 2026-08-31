@@ -1,4 +1,3 @@
-
 const { codeQueue } = require("../queue/codeQueue");
 
 const {
@@ -8,7 +7,7 @@ const {
 const runCode = async (req, res) => {
   try {
     const { code, language, input } = req.body || {};
-
+// validations
     if (typeof code !== "string") {
       return res.status(400).json({
         status: "validation_error",
@@ -36,7 +35,7 @@ const runCode = async (req, res) => {
         stderr: "Input must be a string.",
       });
     }
-
+//actul function
     const job = await codeQueue.add("execute-code", {
       code,
       language,
@@ -105,6 +104,9 @@ const getRunResult = async (req, res) => {
 };
 
 module.exports = { runCode,getRunResult };
+
+
+
 // const {
 //   executeCode,
 //   SUPPORTED_LANGUAGES,

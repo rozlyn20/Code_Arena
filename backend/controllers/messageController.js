@@ -1,3 +1,5 @@
+//"Currently, real-time message creation and retrieval are handled through Socket.IO, so the REST message controller endpoints aren't part of the active ChatFlow path. They could be useful for non-real-time operations or future features such as pagination or message management."
+
 const ChatRoom = require("../models/ChatRoom");
 const Message = require("../models/Message");
 

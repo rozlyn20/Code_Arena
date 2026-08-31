@@ -94,11 +94,6 @@ io.on("connection", (socket) => {
     console.log(userSocketMap);
   });
   socket.on("code-change", ({ roomId, code }) => {
-      console.log("====== SERVER ======");
-  console.log(socket.id);
-  console.log(roomId);
-  console.log(code);
-    console.log("Code received");
     socket.to(roomId).emit("code-change", {
       code,
     });
