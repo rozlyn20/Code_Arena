@@ -18,10 +18,12 @@ export default function Room() {
   const codeRef = useRef("");
   const [clients, setClients] = useState([]);
   const [language, setLanguage] = useState("cpp");
- const [input, setInput] = useState("");
-const [execution, setExecution] = useState(null);
-const [isRunning, setIsRunning] = useState(false);
+  const [input, setInput] = useState("");
+  const [execution, setExecution] = useState(null);
+  const [isRunning, setIsRunning] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [cooldownUntil, setCooldownUntil] = useState(null);
+
   const handleCodeChange = (newCode) => {
     setCode(newCode);
     codeRef.current = newCode;
@@ -86,155 +88,174 @@ const [isRunning, setIsRunning] = useState(false);
       socketRef.current?.disconnect();
     };
   }, [roomId, username, navigate]);
- const runCode = async () => {
-  setIsRunning(true);
+  const runCode = async () => {
+    setIsRunning(true);
 
-  try {
-    const apiBase = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+    try {
+      const apiBase = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
 
-    const response = await fetch(`${apiBase}/api/run`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        code,
-        language,
-        input,
-      }),
-    });
+      const response = await fetch(`${apiBase}/api/run`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          code,
+          language,
+          input,
+        }),
+      });
+      if (response.status === 429) {
+        const data = await response.json().catch(() => ({}));
+        setExecution({
+          status: "rate_limited",
+          stdout: "",
+          stderr:
+            data.message ||
+            "You're running code too frequently. Wait a few seconds and try again.",
+        });
+        return;
+      }
 
-    const data = await response.json();
-    setExecution(data);
-  } catch (error) {
-    setExecution({
-      status: "request_error",
-      stdout: "",
-      stderr: "Could not reach the execution server.",
-    });
-  } finally {
-    setIsRunning(false);
-  }
-};
-// const runCode = async () => {
-//   setIsRunning(true);
-//   setExecution(null);
+      const remaining = response.headers.get("X-RateLimit-Remaining");
+      if (remaining !== null && Number(remaining) === 0) {
+        setCooldownUntil(Date.now() + 10_000); // matches refillInterval
+      }
 
-//   try {
-//     const apiBase = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
+      const data = await response.json();
+      setExecution(data);
+    } catch (error) {
+      setExecution({
+        status: "request_error",
+        stdout: "",
+        stderr: "Could not reach the execution server.",
+      });
+    } finally {
+      setIsRunning(false);
+    }
+  };
 
-//     // 1. Queue the execution job
-//     const response = await fetch(`${apiBase}/api/run`, {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//       body: JSON.stringify({
-//         code,
-//         language,
-//         input,
-//       }),
-//     });
+  // inside runCode, after getting response:
 
-//     const data = await response.json();
+  // const runCode = async () => {
+  //   setIsRunning(true);
+  //   setExecution(null);
 
-//     if (!response.ok) {
-//       setExecution(data);
-//       return;
-//     }
+  //   try {
+  //     const apiBase = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
 
-//     const { jobId } = data;
+  //     // 1. Queue the execution job
+  //     const response = await fetch(`${apiBase}/api/run`, {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         code,
+  //         language,
+  //         input,
+  //       }),
+  //     });
 
-//     if (!jobId) {
-//       setExecution({
-//         status: "request_error",
-//         stdout: "",
-//         stderr: "No job ID was returned by the server.",
-//       });
-//       return;
-//     }
+  //     const data = await response.json();
 
-//     // 2. Poll for the result
-//     const maxAttempts = 30;
+  //     if (!response.ok) {
+  //       setExecution(data);
+  //       return;
+  //     }
 
-//     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-//       await new Promise((resolve) => setTimeout(resolve, 500));
+  //     const { jobId } = data;
 
-//       const resultResponse = await fetch(
-//         `${apiBase}/api/run/${jobId}`
-//       );
+  //     if (!jobId) {
+  //       setExecution({
+  //         status: "request_error",
+  //         stdout: "",
+  //         stderr: "No job ID was returned by the server.",
+  //       });
+  //       return;
+  //     }
 
-//       const resultData = await resultResponse.json();
+  //     // 2. Poll for the result
+  //     const maxAttempts = 30;
 
-//       // Still waiting
-//       if (
-//         resultData.status === "waiting" ||
-//         resultData.status === "active" ||
-//         resultData.status === "delayed" ||
-//         resultData.status === "waiting-children"
-//       ) {
-//         continue;
-//       }
+  //     for (let attempt = 0; attempt < maxAttempts; attempt++) {
+  //       await new Promise((resolve) => setTimeout(resolve, 500));
 
-//       // Job finished
-//       if (resultData.status === "completed") {
-//         setExecution(resultData.result);
-//         return;
-//       }
+  //       const resultResponse = await fetch(
+  //         `${apiBase}/api/run/${jobId}`
+  //       );
 
-//       // Job failed
-//       if (resultData.status === "failed") {
-//         setExecution(
-//           resultData.result || {
-//             status: "failed",
-//             stdout: "",
-//             stderr: "Code execution failed.",
-//           }
-//         );
-//         return;
-//       }
-//     }
+  //       const resultData = await resultResponse.json();
 
-//     // 3. Timeout while waiting for worker
-//     setExecution({
-//       status: "timeout",
-//       stdout: "",
-//       stderr: "Execution took too long to complete.",
-//     });
-//   } catch (error) {
-//     console.error("Code execution request failed:", error);
+  //       // Still waiting
+  //       if (
+  //         resultData.status === "waiting" ||
+  //         resultData.status === "active" ||
+  //         resultData.status === "delayed" ||
+  //         resultData.status === "waiting-children"
+  //       ) {
+  //         continue;
+  //       }
 
-//     setExecution({
-//       status: "request_error",
-//       stdout: "",
-//       stderr: "Could not reach the execution server.",
-//     });
-//   } finally {
-//     setIsRunning(false);
-//   }
-// };
+  //       // Job finished
+  //       if (resultData.status === "completed") {
+  //         setExecution(resultData.result);
+  //         return;
+  //       }
 
-const executionText = () => {
-  if (!execution) {
-    return '> Click "Run" to execute your code...';
-  }
+  //       // Job failed
+  //       if (resultData.status === "failed") {
+  //         setExecution(
+  //           resultData.result || {
+  //             status: "failed",
+  //             stdout: "",
+  //             stderr: "Code execution failed.",
+  //           }
+  //         );
+  //         return;
+  //       }
+  //     }
 
-  const sections = [`[${execution.status.toUpperCase()}]`];
+  //     // 3. Timeout while waiting for worker
+  //     setExecution({
+  //       status: "timeout",
+  //       stdout: "",
+  //       stderr: "Execution took too long to complete.",
+  //     });
+  //   } catch (error) {
+  //     console.error("Code execution request failed:", error);
 
-  if (execution.stdout) {
-    sections.push(`STDOUT\n${execution.stdout}`);
-  }
+  //     setExecution({
+  //       status: "request_error",
+  //       stdout: "",
+  //       stderr: "Could not reach the execution server.",
+  //     });
+  //   } finally {
+  //     setIsRunning(false);
+  //   }
+  // };
 
-  if (execution.stderr) {
-    sections.push(`STDERR\n${execution.stderr}`);
-  }
+  const executionText = () => {
+    if (!execution) {
+      return '> Click "Run" to execute your code...';
+    }
 
-  if (!execution.stdout && !execution.stderr) {
-    sections.push("(No output)");
-  }
+    const sections = [`[${execution.status.toUpperCase()}]`];
 
-  return sections.join("\n\n");
-};
+    if (execution.stdout) {
+      sections.push(`STDOUT\n${execution.stdout}`);
+    }
+
+    if (execution.stderr) {
+      sections.push(`STDERR\n${execution.stderr}`);
+    }
+
+    if (!execution.stdout && !execution.stderr) {
+      sections.push("(No output)");
+    }
+
+    return sections.join("\n\n");
+  };
   const syncCode = () => {
     setSyncing(true);
 
@@ -291,15 +312,14 @@ const executionText = () => {
             <option value="python">Python</option>
             <option value="javascript">JavaScript</option>
           </select>
-
           <button
-  type="button"
-  className="run-btn"
-  onClick={runCode}
-  disabled={isRunning}
->
-  {isRunning ? "Running…" : "▶ Run"}
-</button>
+            onClick={runCode}
+            disabled={
+              isRunning || (cooldownUntil && Date.now() < cooldownUntil)
+            }
+          >
+            {isRunning ? "Running…" : "Run"}
+          </button>
           <button
             onClick={syncCode}
             className={`sync-btn ${syncing ? "syncing" : ""}`}
@@ -343,36 +363,35 @@ const executionText = () => {
             />
           </div>
           <div className="output-panel">
-  <div className="output-header">
-    <div className="terminal-title">
-      <span className="terminal-dot"></span>
-      <h3>Output</h3>
-    </div>
+            <div className="output-header">
+              <div className="terminal-title">
+                <span className="terminal-dot"></span>
+                <h3>Output</h3>
+              </div>
 
-    <button
-      className="clear-output"
-      onClick={() => setExecution(null)}
-      type="button"
-    >
-      Clear
-    </button>
-  </div>
+              <button
+                className="clear-output"
+                onClick={() => setExecution(null)}
+                type="button"
+              >
+                Clear
+              </button>
+            </div>
 
-  <label className="stdin-label" htmlFor="custom-input">
-    Custom input (stdin)
+            <label className="stdin-label" htmlFor="custom-input">
+              Custom input (stdin)
+              <textarea
+                id="custom-input"
+                className="stdin-input"
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                placeholder={"Example:\n5\n10 20 30 40 50"}
+                spellCheck="false"
+              />
+            </label>
 
-    <textarea
-      id="custom-input"
-      className="stdin-input"
-      value={input}
-      onChange={(event) => setInput(event.target.value)}
-      placeholder={"Example:\n5\n10 20 30 40 50"}
-      spellCheck="false"
-    />
-  </label>
-
-  <pre className="terminal-output">{executionText()}</pre>
-</div>
+            <pre className="terminal-output">{executionText()}</pre>
+          </div>
         </main>
       </div>
     </div>
