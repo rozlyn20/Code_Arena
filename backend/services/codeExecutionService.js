@@ -1,225 +1,23 @@
-const { spawn } = require("child_process");
-const crypto = require("crypto");
-const fs = require("fs/promises");
-const os = require("os");
-const path = require("path");
 
-const COMPILE_TIMEOUT_MS = 30_000;
-const DOCKER_RUN_TIMEOUT_MS = 30_000;
-const PROGRAM_TIMEOUT_SECONDS = 5;
-const TIMEOUT_MARKER = "__CODEARENA_TIMEOUT__";
-
-const executionRoot =
-  process.env.EXECUTION_ROOT ||
-  (process.platform === "win32"
-    ? "C:\\codearena-execution-temp"
-    : path.join(os.tmpdir(), "codearena-execution-temp"));
+const API_URL =
+  "https://api.onlinecompiler.io/api/run-code-sync/";
 
 const LANGUAGE_CONFIG = {
-  cpp: {
-    fileName: "main.cpp",
-    image: "gcc:latest",
-
-    buildCommand: "sh",
-    buildArgs: ["-c", "g++ main.cpp -std=c++17 -O2 -o main"],
-
-    runCommand: "sh",
-   runArgs: [
-  "-c",
-  [
-    `timeout -k 1s ${PROGRAM_TIMEOUT_SECONDS}s ./main`,
-    "exitCode=$?",
-    `if [ "$exitCode" -eq 124 ] || [ "$exitCode" -eq 137 ]; then`,
-    `  echo "${TIMEOUT_MARKER}" >&2`,
-    "  exit 124",
-    "fi",
-    'exit "$exitCode"',
-  ].join("\n"),
-],
-  },
-
-python: {
-  fileName: "main.py",
-  image: "python:3.12-slim",
-
-  runCommand: "sh",
-  runArgs: [
-    "-c",
-    [
-      `timeout -k 1s ${PROGRAM_TIMEOUT_SECONDS}s python main.py`,
-      "exitCode=$?",
-      `if [ "$exitCode" -eq 124 ] || [ "$exitCode" -eq 137 ]; then`,
-      `  echo "${TIMEOUT_MARKER}" >&2`,
-      "  exit 124",
-      "fi",
-      'exit "$exitCode"',
-    ].join("\n"),
-  ],
-},
-
-  javascript: {
-  fileName: "main.js",
-  image: "node:22-slim",
-
-  runCommand: "sh",
-  runArgs: [
-    "-c",
-    [
-      `timeout -k 1s ${PROGRAM_TIMEOUT_SECONDS}s node main.js`,
-      "exitCode=$?",
-      `if [ "$exitCode" -eq 124 ] || [ "$exitCode" -eq 137 ]; then`,
-      `  echo "${TIMEOUT_MARKER}" >&2`,
-      "  exit 124",
-      "fi",
-      'exit "$exitCode"',
-    ].join("\n"),
-  ],
-},
-
-  java: {
-    fileName: "Main.java",
-  },
+  cpp: "g++-15",
+  python: "python-3.14",
+  javascript: "nodejs-24",
+  java: "openjdk-25",
 };
 
-function forceRemoveContainer(containerName) {
-  const cleanup = spawn(
-    "docker",
-    ["rm", "-f", containerName],
-    {
-      shell: false,
-      windowsHide: true,
-      stdio: "ignore",
-    }
-  );
+const TIMEOUT_MS = 35_000;
+const PROGRAM_TIMEOUT_SECONDS = 5;
+const MAX_CODE_LENGTH = 100 * 1024;
+const MAX_INPUT_LENGTH = 100 * 1024;
 
-  cleanup.on("error", () => {});
-}
+async function executeCode({ language, code, input = "" }) {
+  const compiler = LANGUAGE_CONFIG[language];
 
-function runDockerProcess({
-  image,
-  sourceDir,
-  command,
-  args = [],
-  input = "",
-  timeoutMs,
-}) {
-  return new Promise((resolve) => {
-    const containerName = `codearena-${crypto.randomUUID()}`;
-
-    const dockerArgs = [
-      "run",
-      "--rm",
-      "--name",
-      containerName,
-      "-i",
-
-      // Basic isolation. Docker-based execution still needs further hardening.
-      "--network",
-      "none",
-      "--memory",
-      "256m",
-      "--cpus",
-      "0.5",
-      "--pids-limit",
-      "64",
-
-      "-v",
-      `${sourceDir}:/code`,
-      "-w",
-      "/code",
-
-      image,
-      command,
-      ...args,
-    ];
-
-    console.log("[docker] starting", {
-      sourceDir,
-      containerName,
-      timeoutMs,
-      dockerArgs,
-    });
-
-    let stdout = "";
-    let stderr = "";
-    let timedOut = false;
-    let finished = false;
-
-    const child = spawn("docker", dockerArgs, {
-      cwd: sourceDir,
-      shell: false,
-      windowsHide: true,
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-
-    const timer = setTimeout(() => {
-      timedOut = true;
-
-      console.warn("[docker] host timeout reached", {
-        containerName,
-        timeoutMs,
-      });
-
-      // Stops the container even if killing the Docker CLI alone is insufficient.
-      forceRemoveContainer(containerName);
-      child.kill();
-    }, timeoutMs);
-
-    function finish(result) {
-      if (finished) return;
-
-      finished = true;
-      clearTimeout(timer);
-
-      const dockerResult = {
-        stdout,
-        stderr,
-        timedOut,
-        ...result,
-      };
-
-      console.log("[docker] finished", dockerResult);
-      resolve(dockerResult);
-    }
-
-    child.stdout.on("data", (chunk) => {
-      stdout += chunk.toString();
-    });
-
-    child.stderr.on("data", (chunk) => {
-      stderr += chunk.toString();
-    });
-
-    child.on("error", (error) => {
-      finish({
-        exitCode: null,
-        spawnError: error.message,
-      });
-    });
-
-    child.on("close", (exitCode, signal) => {
-      finish({
-        exitCode,
-        signal,
-        spawnError: null,
-      });
-    });
-
-    child.stdin.on("error", () => {});
-
-    // Close stdin for compilation. Send and close it for program execution.
-    if (input !== null) {
-      child.stdin.end(input);
-    } else {
-      child.stdin.end();
-    }
-  });
-}
-
-async function executeCode({ language, code, input }) {
-  const config = LANGUAGE_CONFIG[language];
-
-  if (!config) {
+  if (!compiler) {
     return {
       status: "validation_error",
       stdout: "",
@@ -227,108 +25,480 @@ async function executeCode({ language, code, input }) {
     };
   }
 
-  if (!config.image) {
+  if (typeof code !== "string" || !code.trim()) {
     return {
-      status: "configuration_error",
+      status: "validation_error",
       stdout: "",
-      stderr: `Docker execution is not configured for ${language} yet.`,
+      stderr: "Source code is required.",
     };
   }
 
-  await fs.mkdir(executionRoot, { recursive: true });
-
-  const tempDir = await fs.mkdtemp(
-    path.join(executionRoot, "codearena-")
-  );
-
-  const sourcePath = path.join(tempDir, config.fileName);
-
-  try {
-    await fs.writeFile(sourcePath, code, "utf8");
-
-   if (config.buildCommand) {
-  const compilation = await runDockerProcess({
-    image: config.image,
-    sourceDir: tempDir,
-    command: config.buildCommand,
-    args: config.buildArgs,
-    input: null,
-    timeoutMs: COMPILE_TIMEOUT_MS,
-  });
-
-    if (compilation.timedOut) {
-      return {
-        status: "timeout",
-        stdout: compilation.stdout,
-        stderr: compilation.stderr || "Compilation timed out.",
-      };
-    }
-
-    if (
-      compilation.spawnError ||
-      compilation.exitCode !== 0
-    ) {
-      return {
-        status: "compilation_error",
-        stdout: compilation.stdout,
-        stderr:
-          compilation.stderr ||
-          compilation.spawnError ||
-          "Compilation failed.",
-      };
-    }
+  if (
+    Buffer.byteLength(code, "utf8") > MAX_CODE_LENGTH ||
+    Buffer.byteLength(input, "utf8") > MAX_INPUT_LENGTH
+  ) {
+    return {
+      status: "validation_error",
+      stdout: "",
+      stderr: "Code or input exceeds the 100 KB limit.",
+    };
   }
 
-    const execution = await runDockerProcess({
-      image: config.image,
-      sourceDir: tempDir,
-      command: config.runCommand,
-      args: config.runArgs,
-      input: input ?? "",
-      timeoutMs: DOCKER_RUN_TIMEOUT_MS,
+  const apiKey = process.env.CODE_EXECUTION_API_KEY;
+
+  if (!apiKey) {
+    console.error("CODE_EXECUTION_API_KEY is not configured.");
+
+    return {
+      status: "configuration_error",
+      stdout: "",
+      stderr: "Code execution service is not configured.",
+    };
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(
+    () => controller.abort(),
+    TIMEOUT_MS
+  );
+
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        compiler,
+        code,
+        input,
+        time_limit: PROGRAM_TIMEOUT_SECONDS,
+      }),
+      signal: controller.signal,
     });
 
-    const programTimedOut =
-      execution.timedOut ||
-      execution.exitCode === 124 ||
-      execution.stderr.includes(TIMEOUT_MARKER);
+    const result = await response.json().catch(() => null);
 
-    if (programTimedOut) {
+    if (!response.ok) {
+      console.error(
+        "Code execution API returned HTTP",
+        response.status
+      );
+
       return {
-        status: "timeout",
-        stdout: execution.stdout,
-        stderr: "Execution timed out.",
+        status: "service_error",
+        stdout: "",
+        stderr:
+          response.status === 429
+            ? "Code execution service is busy or its usage limit was reached. Try again later."
+            : response.status === 401 ||
+                response.status === 403
+              ? "Code execution API authentication failed. Check the API key."
+              : "The code execution service could not process the request.",
       };
     }
 
-    if (
-      execution.spawnError ||
-      execution.exitCode !== 0
-    ) {
+    if (!result || typeof result.output !== "string") {
+      return {
+        status: "service_error",
+        stdout: "",
+        stderr: "Invalid response from code execution service.",
+      };
+    }
+
+    const stdout = result.output;
+    const stderr = result.error || "";
+    const exitCode = result.exit_code;
+
+    if (exitCode === 124) {
+      return {
+        status: "timeout",
+        stdout,
+        stderr: stderr || "Execution timed out.",
+      };
+    }
+
+    if (exitCode !== 0 || result.status !== "success") {
       return {
         status: "runtime_error",
-        stdout: execution.stdout,
+        stdout,
         stderr:
-          execution.stderr ||
-          execution.spawnError ||
-          `Process exited with code ${execution.exitCode}.`,
+          stderr || `Program exited with code ${exitCode}.`,
       };
     }
 
     return {
       status: "success",
-      stdout: execution.stdout,
-      stderr: execution.stderr,
+      stdout,
+      stderr,
     };
-  } finally {
-    await fs.rm(tempDir, {
-      recursive: true,
-      force: true,
-    });
+  } 
+  catch (error) {
+  console.error("Code execution request failed:", {
+    message: error.message,
+    cause: error.cause?.message,
+    code: error.cause?.code,
+    stack: error.stack,
+  });
+
+  if (error.name === "AbortError") {
+    return {
+      status: "timeout",
+      stdout: "",
+      stderr: "Code execution request timed out.",
+    };
   }
+
+  return {
+    status: "service_error",
+    stdout: "",
+    stderr: "Could not connect to the code execution service.",
+  };
+} finally {
+  clearTimeout(timer);
+}
 }
 
 module.exports = {
   executeCode,
   SUPPORTED_LANGUAGES: Object.keys(LANGUAGE_CONFIG),
 };
+
+
+
+
+// const { spawn } = require("child_process");
+// const crypto = require("crypto");
+// const fs = require("fs/promises");
+// const os = require("os");
+// const path = require("path");
+
+// const COMPILE_TIMEOUT_MS = 30_000;
+// const DOCKER_RUN_TIMEOUT_MS = 30_000;
+// const PROGRAM_TIMEOUT_SECONDS = 5;
+// const TIMEOUT_MARKER = "__CODEARENA_TIMEOUT__";
+
+// const executionRoot =
+//   process.env.EXECUTION_ROOT ||
+//   (process.platform === "win32"
+//     ? "C:\\codearena-execution-temp"
+//     : path.join(os.tmpdir(), "codearena-execution-temp"));
+
+// const LANGUAGE_CONFIG = {
+//   cpp: {
+//     fileName: "main.cpp",
+//     image: "gcc:latest",
+
+//     buildCommand: "sh",
+//     buildArgs: ["-c", "g++ main.cpp -std=c++17 -O2 -o main"],
+
+//     runCommand: "sh",
+//    runArgs: [
+//   "-c",
+//   [
+//     `timeout -k 1s ${PROGRAM_TIMEOUT_SECONDS}s ./main`,
+//     "exitCode=$?",
+//     `if [ "$exitCode" -eq 124 ] || [ "$exitCode" -eq 137 ]; then`,
+//     `  echo "${TIMEOUT_MARKER}" >&2`,
+//     "  exit 124",
+//     "fi",
+//     'exit "$exitCode"',
+//   ].join("\n"),
+// ],
+//   },
+
+// python: {
+//   fileName: "main.py",
+//   image: "python:3.12-slim",
+
+//   runCommand: "sh",
+//   runArgs: [
+//     "-c",
+//     [
+//       `timeout -k 1s ${PROGRAM_TIMEOUT_SECONDS}s python main.py`,
+//       "exitCode=$?",
+//       `if [ "$exitCode" -eq 124 ] || [ "$exitCode" -eq 137 ]; then`,
+//       `  echo "${TIMEOUT_MARKER}" >&2`,
+//       "  exit 124",
+//       "fi",
+//       'exit "$exitCode"',
+//     ].join("\n"),
+//   ],
+// },
+
+//   javascript: {
+//   fileName: "main.js",
+//   image: "node:22-slim",
+
+//   runCommand: "sh",
+//   runArgs: [
+//     "-c",
+//     [
+//       `timeout -k 1s ${PROGRAM_TIMEOUT_SECONDS}s node main.js`,
+//       "exitCode=$?",
+//       `if [ "$exitCode" -eq 124 ] || [ "$exitCode" -eq 137 ]; then`,
+//       `  echo "${TIMEOUT_MARKER}" >&2`,
+//       "  exit 124",
+//       "fi",
+//       'exit "$exitCode"',
+//     ].join("\n"),
+//   ],
+// },
+
+//   java: {
+//     fileName: "Main.java",
+//   },
+// };
+
+// function forceRemoveContainer(containerName) {
+//   const cleanup = spawn(
+//     "docker",
+//     ["rm", "-f", containerName],
+//     {
+//       shell: false,
+//       windowsHide: true,
+//       stdio: "ignore",
+//     }
+//   );
+
+//   cleanup.on("error", () => {});
+// }
+
+// function runDockerProcess({
+//   image,
+//   sourceDir,
+//   command,
+//   args = [],
+//   input = "",
+//   timeoutMs,
+// }) {
+//   return new Promise((resolve) => {
+//     const containerName = `codearena-${crypto.randomUUID()}`;
+
+//     const dockerArgs = [
+//       "run",
+//       "--rm",
+//       "--name",
+//       containerName,
+//       "-i",
+
+//       // Basic isolation. Docker-based execution still needs further hardening.
+//       "--network",
+//       "none",
+//       "--memory",
+//       "256m",
+//       "--cpus",
+//       "0.5",
+//       "--pids-limit",
+//       "64",
+
+//       "-v",
+//       `${sourceDir}:/code`,
+//       "-w",
+//       "/code",
+
+//       image,
+//       command,
+//       ...args,
+//     ];
+
+//     console.log("[docker] starting", {
+//       sourceDir,
+//       containerName,
+//       timeoutMs,
+//       dockerArgs,
+//     });
+
+//     let stdout = "";
+//     let stderr = "";
+//     let timedOut = false;
+//     let finished = false;
+
+//     const child = spawn("docker", dockerArgs, {
+//       cwd: sourceDir,
+//       shell: false,
+//       windowsHide: true,
+//       stdio: ["pipe", "pipe", "pipe"],
+//     });
+
+//     const timer = setTimeout(() => {
+//       timedOut = true;
+
+//       console.warn("[docker] host timeout reached", {
+//         containerName,
+//         timeoutMs,
+//       });
+
+//       // Stops the container even if killing the Docker CLI alone is insufficient.
+//       forceRemoveContainer(containerName);
+//       child.kill();
+//     }, timeoutMs);
+
+//     function finish(result) {
+//       if (finished) return;
+
+//       finished = true;
+//       clearTimeout(timer);
+
+//       const dockerResult = {
+//         stdout,
+//         stderr,
+//         timedOut,
+//         ...result,
+//       };
+
+//       console.log("[docker] finished", dockerResult);
+//       resolve(dockerResult);
+//     }
+
+//     child.stdout.on("data", (chunk) => {
+//       stdout += chunk.toString();
+//     });
+
+//     child.stderr.on("data", (chunk) => {
+//       stderr += chunk.toString();
+//     });
+
+//     child.on("error", (error) => {
+//       finish({
+//         exitCode: null,
+//         spawnError: error.message,
+//       });
+//     });
+
+//     child.on("close", (exitCode, signal) => {
+//       finish({
+//         exitCode,
+//         signal,
+//         spawnError: null,
+//       });
+//     });
+
+//     child.stdin.on("error", () => {});
+
+//     // Close stdin for compilation. Send and close it for program execution.
+//     if (input !== null) {
+//       child.stdin.end(input);
+//     } else {
+//       child.stdin.end();
+//     }
+//   });
+// }
+
+// async function executeCode({ language, code, input }) {
+//   const config = LANGUAGE_CONFIG[language];
+
+//   if (!config) {
+//     return {
+//       status: "validation_error",
+//       stdout: "",
+//       stderr: `Unsupported language: ${language}`,
+//     };
+//   }
+
+//   if (!config.image) {
+//     return {
+//       status: "configuration_error",
+//       stdout: "",
+//       stderr: `Docker execution is not configured for ${language} yet.`,
+//     };
+//   }
+
+//   await fs.mkdir(executionRoot, { recursive: true });
+
+//   const tempDir = await fs.mkdtemp(
+//     path.join(executionRoot, "codearena-")
+//   );
+
+//   const sourcePath = path.join(tempDir, config.fileName);
+
+//   try {
+//     await fs.writeFile(sourcePath, code, "utf8");
+
+//    if (config.buildCommand) {
+//   const compilation = await runDockerProcess({
+//     image: config.image,
+//     sourceDir: tempDir,
+//     command: config.buildCommand,
+//     args: config.buildArgs,
+//     input: null,
+//     timeoutMs: COMPILE_TIMEOUT_MS,
+//   });
+
+//     if (compilation.timedOut) {
+//       return {
+//         status: "timeout",
+//         stdout: compilation.stdout,
+//         stderr: compilation.stderr || "Compilation timed out.",
+//       };
+//     }
+
+//     if (
+//       compilation.spawnError ||
+//       compilation.exitCode !== 0
+//     ) {
+//       return {
+//         status: "compilation_error",
+//         stdout: compilation.stdout,
+//         stderr:
+//           compilation.stderr ||
+//           compilation.spawnError ||
+//           "Compilation failed.",
+//       };
+//     }
+//   }
+
+//     const execution = await runDockerProcess({
+//       image: config.image,
+//       sourceDir: tempDir,
+//       command: config.runCommand,
+//       args: config.runArgs,
+//       input: input ?? "",
+//       timeoutMs: DOCKER_RUN_TIMEOUT_MS,
+//     });
+
+//     const programTimedOut =
+//       execution.timedOut ||
+//       execution.exitCode === 124 ||
+//       execution.stderr.includes(TIMEOUT_MARKER);
+
+//     if (programTimedOut) {
+//       return {
+//         status: "timeout",
+//         stdout: execution.stdout,
+//         stderr: "Execution timed out.",
+//       };
+//     }
+
+//     if (
+//       execution.spawnError ||
+//       execution.exitCode !== 0
+//     ) {
+//       return {
+//         status: "runtime_error",
+//         stdout: execution.stdout,
+//         stderr:
+//           execution.stderr ||
+//           execution.spawnError ||
+//           `Process exited with code ${execution.exitCode}.`,
+//       };
+//     }
+
+//     return {
+//       status: "success",
+//       stdout: execution.stdout,
+//       stderr: execution.stderr,
+//     };
+//   } finally {
+//     await fs.rm(tempDir, {
+//       recursive: true,
+//       force: true,
+//     });
+//   }
+// }
+
+// module.exports = {
+//   executeCode,
+//   SUPPORTED_LANGUAGES: Object.keys(LANGUAGE_CONFIG),
+// };

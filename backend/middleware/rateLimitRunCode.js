@@ -1,6 +1,6 @@
 // middleware/rateLimitRunCode.js
 const { createClient } = require('redis');
-const { TokenBucket } = require('../lib/tokenBucket');
+const { TokenBucket } = require('../lib/tokenBucket.js');
 
 const client = createClient({ url: process.env.REDIS_URL || 'redis://localhost:6379' });
 client.connect();
