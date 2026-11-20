@@ -474,3 +474,76 @@
   cursor: wait;
   opacity: 0.65;
 }
+/* ---- Live collaboration: tabs + connection status ---- */
+
+.editor-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.editor-tab {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  background: transparent;
+  color: var(--muted, #a1a1aa);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.editor-tab:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.editor-tab.active {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border);
+}
+
+.tab-hint {
+  font-size: 0.7rem;
+  font-weight: 500;
+  opacity: 0.65;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-pill::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-pill.live {
+  color: #34d399;
+}
+
+.status-pill.syncing {
+  color: #fbbf24;
+}
+
+.status-pill.offline {
+  color: #f87171;
+}

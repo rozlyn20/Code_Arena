@@ -22,9 +22,12 @@
     "express": "^5.2.1",
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",
+    "lib0": "^0.2.99",
     "mongoose": "^9.8.0",
     "nodemailer": "^9.0.5",
     "redis": "^6.2.1",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "y-protocols": "^1.0.6",
+    "yjs": "^13.6.20"
   }
 }

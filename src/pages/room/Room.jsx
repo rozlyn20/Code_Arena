@@ -1,94 +1,47 @@
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import "./room.css";
 import Client from "../../components/Client";
 import Editor from "../../components/Editor";
-import { initSocket } from "../../socket/socket";
-import ACTIONS from "../../socket/actions";
+import { useCollabRoom } from "../../collab/useCollabRoom";
+import { useYMapValue } from "../../collab/useYMapValue";
 
 export default function Room() {
-  const socketRef = useRef(null);
-
   const navigate = useNavigate();
   const { roomId } = useParams();
   const location = useLocation();
-  const { username, isHost } = location.state || {};
-  const [code, setCode] = useState("");
-  const codeRef = useRef("");
-  const [clients, setClients] = useState([]);
-  const [language, setLanguage] = useState("cpp");
-  const [input, setInput] = useState("");
-  const [execution, setExecution] = useState(null);
+  const { username } = location.state || {};
+
+  // Two Yjs documents per room:
+  //   main   -> shared, everyone edits it live (like a Google Doc)
+  //   branch -> private to me; syncs only across my own tabs/devices
+  const { collab, connected, synced, peers, error } = useCollabRoom({ roomId, username });
+  const [tab, setTab] = useState("main");
+  const active = collab ? collab[tab] : null;
+
+  // Language, stdin and the last run's output live inside the active document,
+  // so on Main everyone sees the same run result.
+  const [language, setLanguage] = useYMapValue(active?.meta, "language", "cpp");
+  const [input, setInput] = useYMapValue(active?.meta, "input", "");
+  const [execution, setExecution] = useYMapValue(active?.meta, "lastRun", null);
+
   const [isRunning, setIsRunning] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [cooldownUntil, setCooldownUntil] = useState(null);
 
-  const handleCodeChange = (newCode) => {
-    setCode(newCode);
-    codeRef.current = newCode;
-  };
   useEffect(() => {
     if (!username) {
       toast.error("Please enter your display name.");
       navigate("/roomhub");
-      return;
     }
+  }, [username, navigate]);
 
-    const init = async () => {
-      socketRef.current = await initSocket();
+  useEffect(() => {
+    if (error) toast.error(`Live sync: ${error}`);
+  }, [error]);
 
-      socketRef.current.on(ACTIONS.JOINED, ({ clients, socketId }) => {
-        setClients(clients);
-        if (socketId !== socketRef.current.id) {
-          socketRef.current.emit(ACTIONS.SYNC_CODE, {
-            roomId,
-            code: codeRef.current,
-            targetSocketId: socketId,
-          });
-        }
-      });
-
-      socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
-        toast.success(`${username} left the room`);
-
-        setClients((prev) =>
-          prev.filter((client) => client.socketId !== socketId),
-        );
-      });
-
-      socketRef.current.on("connect", () => {
-        socketRef.current.emit(ACTIONS.JOIN, {
-          roomId,
-          username,
-        });
-      });
-      socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
-        setCode(code);
-        codeRef.current = code;
-      });
-      socketRef.current.on(ACTIONS.SYNC_CODE, ({ code }) => {
-        console.log("CLIENT GOT SYNC", code);
-
-        setCode(code);
-        codeRef.current = code;
-      });
-      socketRef.current.on("hello-test", (data) => {
-        console.log("HELLO TEST", data);
-      });
-
-      socketRef.current.on("connect_error", (err) => {
-        toast.error("Socket connection failed");
-        console.error(err);
-      });
-    };
-    init();
-
-    return () => {
-      socketRef.current?.disconnect();
-    };
-  }, [roomId, username, navigate]);
   const runCode = async () => {
+    if (!active) return;
     setIsRunning(true);
 
     try {
@@ -100,11 +53,12 @@ export default function Room() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          code,
+          code: active.text.toString(),
           language,
           input,
         }),
       });
+
       if (response.status === 429) {
         const data = await response.json().catch(() => ({}));
         setExecution({
@@ -113,6 +67,7 @@ export default function Room() {
           stderr:
             data.message ||
             "You're running code too frequently. Wait a few seconds and try again.",
+          by: username,
         });
         return;
       }
@@ -123,124 +78,28 @@ export default function Room() {
       }
 
       const data = await response.json();
-      setExecution(data);
+      setExecution({ ...data, by: username });
     } catch (error) {
       setExecution({
         status: "request_error",
         stdout: "",
         stderr: "Could not reach the execution server.",
+        by: username,
       });
     } finally {
       setIsRunning(false);
     }
   };
 
-  // inside runCode, after getting response:
-
-  // const runCode = async () => {
-  //   setIsRunning(true);
-  //   setExecution(null);
-
-  //   try {
-  //     const apiBase = import.meta.env.VITE_BACKEND_URL.replace(/\/$/, "");
-
-  //     // 1. Queue the execution job
-  //     const response = await fetch(`${apiBase}/api/run`, {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify({
-  //         code,
-  //         language,
-  //         input,
-  //       }),
-  //     });
-
-  //     const data = await response.json();
-
-  //     if (!response.ok) {
-  //       setExecution(data);
-  //       return;
-  //     }
-
-  //     const { jobId } = data;
-
-  //     if (!jobId) {
-  //       setExecution({
-  //         status: "request_error",
-  //         stdout: "",
-  //         stderr: "No job ID was returned by the server.",
-  //       });
-  //       return;
-  //     }
-
-  //     // 2. Poll for the result
-  //     const maxAttempts = 30;
-
-  //     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-  //       await new Promise((resolve) => setTimeout(resolve, 500));
-
-  //       const resultResponse = await fetch(
-  //         `${apiBase}/api/run/${jobId}`
-  //       );
-
-  //       const resultData = await resultResponse.json();
-
-  //       // Still waiting
-  //       if (
-  //         resultData.status === "waiting" ||
-  //         resultData.status === "active" ||
-  //         resultData.status === "delayed" ||
-  //         resultData.status === "waiting-children"
-  //       ) {
-  //         continue;
-  //       }
-
-  //       // Job finished
-  //       if (resultData.status === "completed") {
-  //         setExecution(resultData.result);
-  //         return;
-  //       }
-
-  //       // Job failed
-  //       if (resultData.status === "failed") {
-  //         setExecution(
-  //           resultData.result || {
-  //             status: "failed",
-  //             stdout: "",
-  //             stderr: "Code execution failed.",
-  //           }
-  //         );
-  //         return;
-  //       }
-  //     }
-
-  //     // 3. Timeout while waiting for worker
-  //     setExecution({
-  //       status: "timeout",
-  //       stdout: "",
-  //       stderr: "Execution took too long to complete.",
-  //     });
-  //   } catch (error) {
-  //     console.error("Code execution request failed:", error);
-
-  //     setExecution({
-  //       status: "request_error",
-  //       stdout: "",
-  //       stderr: "Could not reach the execution server.",
-  //     });
-  //   } finally {
-  //     setIsRunning(false);
-  //   }
-  // };
-
   const executionText = () => {
     if (!execution) {
       return '> Click "Run" to execute your code...';
     }
 
-    const sections = [`[${execution.status.toUpperCase()}]`];
+    const header = `[${execution.status.toUpperCase()}]${
+      execution.by ? `  ·  run by ${execution.by}` : ""
+    }`;
+    const sections = [header];
 
     if (execution.stdout) {
       sections.push(`STDOUT\n${execution.stdout}`);
@@ -256,20 +115,7 @@ export default function Room() {
 
     return sections.join("\n\n");
   };
-  const syncCode = () => {
-    setSyncing(true);
 
-    socketRef.current.emit(ACTIONS.SYNC_CODE, {
-      roomId,
-      code: codeRef.current,
-    });
-
-    setTimeout(() => {
-      setSyncing(false);
-    }, 600);
-
-    toast.success("Sync button clicked!");
-  };
   const copyRoomId = async () => {
     try {
       await navigator.clipboard.writeText(roomId);
@@ -281,9 +127,21 @@ export default function Room() {
 
   const leaveRoom = () => {
     toast.success("Left the room");
-    socketRef.current?.disconnect();
-    navigate("/roomhub");
+    navigate("/roomhub"); // the hook's cleanup closes the connection
   };
+
+  const statusLabel = error
+    ? "Connection problem"
+    : !connected
+      ? "Offline · edits saved on this device"
+      : !synced[tab]
+        ? "Syncing…"
+        : tab === "main"
+          ? "Live"
+          : "Private · synced";
+  const statusClass = error || !connected ? "offline" : !synced[tab] ? "syncing" : "live";
+
+  if (!username) return null;
 
   return (
     <div className="room-page">
@@ -302,6 +160,8 @@ export default function Room() {
             Copy ID
           </button>
 
+          <span className={`status-pill ${statusClass}`}>{statusLabel}</span>
+
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
@@ -315,16 +175,10 @@ export default function Room() {
           <button
             onClick={runCode}
             disabled={
-              isRunning || (cooldownUntil && Date.now() < cooldownUntil)
+              !active || isRunning || (cooldownUntil && Date.now() < cooldownUntil)
             }
           >
             {isRunning ? "Running…" : "Run"}
-          </button>
-          <button
-            onClick={syncCode}
-            className={`sync-btn ${syncing ? "syncing" : ""}`}
-          >
-            {syncing ? "✅ Synced!" : "🔄 Sync Editor"}
           </button>
 
           <button onClick={leaveRoom} className="leave-btn">
@@ -340,27 +194,51 @@ export default function Room() {
           <h3>Participants</h3>
 
           <div className="clients-list">
-            {clients.map((client) => (
+            {peers.map((peer) => (
               <Client
-                key={client.socketId}
-                username={client.username}
-                isHost={client.isHost}
+                key={peer.userKey}
+                username={peer.name}
+                color={peer.color}
+                isSelf={peer.isSelf}
               />
             ))}
           </div>
 
-          <div className="participant">Waiting for others...</div>
+          {peers.length <= 1 && <div className="participant">Waiting for others...</div>}
         </aside>
 
         {/* Editor */}
         <main className="editor-container">
+          <div className="editor-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "main"}
+              className={`editor-tab ${tab === "main" ? "active" : ""}`}
+              onClick={() => setTab("main")}
+            >
+              Main <span className="tab-hint">shared · live</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === "branch"}
+              className={`editor-tab ${tab === "branch" ? "active" : ""}`}
+              onClick={() => setTab("branch")}
+            >
+              My Branch <span className="tab-hint">private</span>
+            </button>
+          </div>
+
           <div className="editor-wrapper">
-            <Editor
-              socketRef={socketRef}
-              roomId={roomId}
-              code={code}
-              onCodeChange={handleCodeChange}
-            />
+            {active && (
+              <Editor
+                key={tab}
+                ytext={active.text}
+                awareness={active.awareness}
+                language={language}
+              />
+            )}
           </div>
           <div className="output-panel">
             <div className="output-header">
