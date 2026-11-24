@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
-import { MessageSquareText, Sparkles } from "lucide-react";
+import { MessageSquareText, Sparkles, TerminalSquare } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import ChatRoom from "./ChatRoom";
 import CreateRoom from "./CreateRoom";
 import JoinRoom from "./JoinRoom";
 import Sidebar from "./Sidebar";
 
 export default function Dashboard({ apiBase, token, user, onLogout }) {
+  const navigate = useNavigate();
   const [rooms, setRooms] = useState([]);
   const [activeRoom, setActiveRoom] = useState(null);
   const [error, setError] = useState("");
@@ -79,9 +81,18 @@ export default function Dashboard({ apiBase, token, user, onLogout }) {
               </h1>
 
               <p className="mt-2 text-sm text-zinc-500">
-                Collaborate, plan, and keep technical conversations in one place.
+                Collaborate, plan, and keep technical conversations in one
+                place.
               </p>
             </div>
+            <button
+              type="button"
+              onClick={() => navigate("/roomhub")}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition hover:opacity-90 active:scale-95"
+            >
+              <TerminalSquare size={16} />
+              Open Code Editor
+            </button>
 
             <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-white/10 bg-zinc-900/60 px-3.5 py-2 text-sm text-zinc-300 shadow-lg shadow-black/20 backdrop-blur-xl">
               <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-brand-blue/30 to-brand-violet/30 text-xs font-bold text-white">
@@ -94,9 +105,12 @@ export default function Dashboard({ apiBase, token, user, onLogout }) {
           <div className="mb-7 grid gap-4 xl:grid-cols-2">
             <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5 shadow-xl shadow-black/20 backdrop-blur-xl transition duration-300 hover:border-indigo-400/25">
               <div className="mb-4">
-                <p className="text-sm font-semibold text-white">Start a discussion</p>
+                <p className="text-sm font-semibold text-white">
+                  Start a discussion
+                </p>
                 <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-                  Create a focused space for your team, project, or interview preparation.
+                  Create a focused space for your team, project, or interview
+                  preparation.
                 </p>
               </div>
 
@@ -109,7 +123,9 @@ export default function Dashboard({ apiBase, token, user, onLogout }) {
 
             <div className="rounded-2xl border border-white/10 bg-zinc-900/60 p-5 shadow-xl shadow-black/20 backdrop-blur-xl transition duration-300 hover:border-violet-400/25">
               <div className="mb-4">
-                <p className="text-sm font-semibold text-white">Join with Room ID</p>
+                <p className="text-sm font-semibold text-white">
+                  Join with Room ID
+                </p>
                 <p className="mt-1 text-xs leading-relaxed text-zinc-500">
                   Continue a conversation shared by your teammates or mentors.
                 </p>

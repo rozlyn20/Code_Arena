@@ -68,16 +68,6 @@ export default function Hero() {
           animate="visible"
           className="lg:col-span-5 flex flex-col justify-center space-y-8 text-left"
         >
-          <motion.div variants={itemVariants} className="inline-flex items-center space-x-2 bg-white/5 border border-white/10 px-3 py-1 rounded-full w-fit">
-            <span className="flex h-2 w-2 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-            </span>
-            <span className="text-xs font-semibold text-indigo-300 tracking-wide uppercase">
-              Placements 2026 Special
-            </span>
-          </motion.div>
-
           <motion.h1 
             variants={itemVariants} 
             className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.1] font-sans"

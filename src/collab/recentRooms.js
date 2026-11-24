@@ -1,7 +1,9 @@
 const KEY = "codearena_recent_rooms";
+const ACTIVITY_KEY = "codearena_guest_active";
 const MAX_ROOMS = 8;
 
-// Rooms this browser has opened lately: [{ roomId, username, lastOpened }]
+// GUEST history lives here, in this browser. Logged-in users use the server
+// (see roomHistory.js). Entries look like { roomId, username, lastOpened }.
 export function getRecentRooms() {
   try {
     const list = JSON.parse(localStorage.getItem(KEY) || "[]");
@@ -11,14 +13,25 @@ export function getRecentRooms() {
   }
 }
 
-// Call whenever you enter a room. Moves it to the top of the list.
+// Call whenever a guest enters a room. Moves it to the top of the list.
 export function rememberRoom(roomId, username) {
   try {
     const rest = getRecentRooms().filter((room) => room.roomId !== roomId);
     const next = [{ roomId, username, lastOpened: Date.now() }, ...rest].slice(0, MAX_ROOMS);
     localStorage.setItem(KEY, JSON.stringify(next));
+    // Remember that this guest identity owns data worth moving into an account.
+    localStorage.setItem(ACTIVITY_KEY, "1");
   } catch {
     // Storage unavailable (e.g. private mode): the list just won't persist.
+  }
+}
+
+// True if this browser has been used as a guest since the last migration.
+export function hasGuestActivity() {
+  try {
+    return localStorage.getItem(ACTIVITY_KEY) === "1";
+  } catch {
+    return false;
   }
 }
 
@@ -31,6 +44,15 @@ export function forgetRoom(roomId) {
     // ignore
   }
   return next;
+}
+
+export function clearRecentRooms() {
+  try {
+    localStorage.removeItem(KEY);
+    localStorage.removeItem(ACTIVITY_KEY);
+  } catch {
+    // ignore
+  }
 }
 
 export function timeAgo(timestamp) {

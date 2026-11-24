@@ -10,7 +10,7 @@ const authRoutes = require("./routes/authRoutes");
 const chatRoomRoutes = require("./routes/chatRoomRoutes");
 const messageRoutes = require("./routes/messageRoutes");
 const runRoutes = require("./routes/runRoutes");
-
+const roomHistoryRoutes = require("./routes/roomHistoryRoutes");
 const app = express();
 connectDB();
 
@@ -52,6 +52,8 @@ app.use("/api", runRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/chatrooms", chatRoomRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/rooms", roomHistoryRoutes);
+
 
 app.get("/", (req, res) => {
   res.send("CodeArena Backend Running 🚀");

@@ -53,7 +53,7 @@ export function useCollabRoom({ roomId, username }) {
       },
     });
 
-    const user = { name: username, userKey: identity.userKey, ...colorFor(identity.userKey) };
+   const user = { name: username, userKey: identity.publicKey, ...colorFor(identity.publicKey) };
     const shared = { roomId, socket, userKey: identity.userKey, user };
 
     const main = createChannel({

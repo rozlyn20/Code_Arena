@@ -6,6 +6,8 @@ const encoding = require("lib0/encoding");
 const decoding = require("lib0/decoding");
 const User = require("../models/User");
 const YDocState = require("../models/YDocState");
+const UserRoom = require("../models/UserRoom");
+const { docName } = require("./docNames");
 
 const SAVE_DEBOUNCE_MS = 2000;
 const KINDS = new Set(["main", "branch"]);
@@ -13,13 +15,7 @@ const GUEST_ID_RE = /^[0-9a-f-]{36}$/i;
 
 // docName -> entry. An entry is one live Y.Doc plus its awareness (presence/cursors).
 const entries = new Map();
-
-function docName(roomId, kind, userId) {
-  const safeRoom = encodeURIComponent(roomId); // keeps ":" out of ids so names can't collide
-  return kind === "main"
-    ? `${safeRoom}:main`
-    : `${safeRoom}:branch:${encodeURIComponent(userId)}`;
-}
+let collabNs = null; // set in registerCollabSocket; used by mergeIntoBranch
 
 /* ---------- persistence ---------- */
 
@@ -145,6 +141,22 @@ async function flushAll() {
   await Promise.allSettled([...entries.values()].map((entry) => save(entry)));
 }
 
+// Merge a Yjs update into a user's branch document (used when a guest logs in
+// and their private branches move to the account). It goes through the same
+// in-memory entry that live sockets use, so a branch that is open in another
+// tab is updated live and can't be overwritten by that tab's next save.
+async function mergeIntoBranch({ name, roomId, update }) {
+  if (!collabNs) throw new Error("Collab namespace is not ready.");
+  const entry = getEntry(collabNs, { name, kind: "branch", roomId });
+  await entry.ready;
+  try {
+    Y.applyUpdate(entry.doc, update, "claim");
+    await save(entry);
+  } finally {
+    await release(entry);
+  }
+}
+
 /* ---------- socket namespace ---------- */
 
 async function authenticate(socket, next) {
@@ -163,6 +175,8 @@ async function authenticate(socket, next) {
       if (user) {
         socket.data.userId = String(user._id);
         socket.data.username = user.username;
+        socket.data.displayName = String(username || user.username).slice(0, 40);
+        socket.data.isGuest = false;
         return next();
       }
     } catch {
@@ -175,6 +189,8 @@ async function authenticate(socket, next) {
   if (typeof guestId === "string" && GUEST_ID_RE.test(guestId)) {
     socket.data.userId = `guest:${guestId}`;
     socket.data.username = String(username || "Guest").slice(0, 40);
+    socket.data.displayName = socket.data.username;
+    socket.data.isGuest = true;
     return next();
   }
 
@@ -183,6 +199,7 @@ async function authenticate(socket, next) {
 
 function registerCollabSocket(io) {
   const ns = io.of("/collab");
+  collabNs = ns;
   ns.use(authenticate);
 
   ns.on("connection", (socket) => {
@@ -214,6 +231,16 @@ function registerCollabSocket(io) {
         entry.sockets.add(socket);
         socket.data.joined.set(kind, entry);
         socket.join(entry.room);
+
+        // Logged-in users get this room added to their account's recent rooms.
+        // (Guests keep theirs in localStorage.) Fire-and-forget: never blocks joining.
+        if (kind === "main" && !socket.data.isGuest) {
+          UserRoom.updateOne(
+            { user: userId, roomId },
+            { $set: { lastOpened: new Date(), displayName: socket.data.displayName } },
+            { upsert: true },
+          ).catch((err) => console.error("[collab] history update failed:", err.message));
+        }
 
         // Start the sync handshake: send what the server has (step 1).
         const enc = encoding.createEncoder();
@@ -277,4 +304,4 @@ function registerCollabSocket(io) {
   });
 }
 
-module.exports = { registerCollabSocket, flushAll };
+module.exports = { registerCollabSocket, flushAll, mergeIntoBranch };

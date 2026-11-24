@@ -7,6 +7,7 @@ import Editor from "../../components/Editor";
 import { useCollabRoom } from "../../collab/useCollabRoom";
 import { useYMapValue } from "../../collab/useYMapValue";
 import { rememberRoom } from "../../collab/recentRooms";
+import { isLoggedIn } from "../../collab/roomHistory";
 
 export default function Room() {
   const navigate = useNavigate();
@@ -42,9 +43,8 @@ export default function Room() {
   }, [error]);
     // Feeds the "Recent rooms" list on the hub page.
   useEffect(() => {
-    if (username && roomId) rememberRoom(roomId, username);
+    if (username && roomId && !isLoggedIn()) rememberRoom(roomId, username);
   }, [roomId, username]);
-
   const runCode = async () => {
     if (!active) return;
     setIsRunning(true);

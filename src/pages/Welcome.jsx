@@ -37,17 +37,6 @@ export default function Welcome() {
           {/* How It Works Section */}
           <HowItWorks />
 
-          {/* Why CodeArena Section */}
-          {/* <Comparison /> */}
-
-          {/* AI Mentor Section */}
-          {/* <AIMentor /> */}
-
-          {/* Statistics Section
-          <Stats /> */}
-
-          {/* Testimonials Section */}
-          {/* <Testimonials /> */}
 
           {/* FAQ Accordion Section */}
           <FAQ />
