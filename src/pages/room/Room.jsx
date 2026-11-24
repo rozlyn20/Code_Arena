@@ -6,6 +6,7 @@ import Client from "../../components/Client";
 import Editor from "../../components/Editor";
 import { useCollabRoom } from "../../collab/useCollabRoom";
 import { useYMapValue } from "../../collab/useYMapValue";
+import { rememberRoom } from "../../collab/recentRooms";
 
 export default function Room() {
   const navigate = useNavigate();
@@ -39,6 +40,10 @@ export default function Room() {
   useEffect(() => {
     if (error) toast.error(`Live sync: ${error}`);
   }, [error]);
+    // Feeds the "Recent rooms" list on the hub page.
+  useEffect(() => {
+    if (username && roomId) rememberRoom(roomId, username);
+  }, [roomId, username]);
 
   const runCode = async () => {
     if (!active) return;
@@ -125,6 +130,35 @@ export default function Room() {
     }
   };
 
+  const downloadCode = () => {
+    if (!active) return;
+
+    const code = active.text.toString();
+    if (!code.trim()) {
+      toast.error("Nothing to download yet.");
+      return;
+    }
+
+    const extensions = { cpp: "cpp", python: "py", java: "java", javascript: "js" };
+    // Java needs the file named after its public class, which our runner calls Main.
+    const filename =
+      language === "java"
+        ? "Main.java"
+        : `codearena-${tab}.${extensions[language] || "txt"}`;
+
+    const blob = new Blob([code], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+
+    toast.success(`Downloaded ${filename}`);
+  };
+
   const leaveRoom = () => {
     toast.success("Left the room");
     navigate("/roomhub"); // the hook's cleanup closes the connection
@@ -158,6 +192,10 @@ export default function Room() {
 
           <button onClick={copyRoomId} className="copy-btn">
             Copy ID
+          </button>
+
+          <button onClick={downloadCode} disabled={!active} className="copy-btn">
+            Download
           </button>
 
           <span className={`status-pill ${statusClass}`}>{statusLabel}</span>
